@@ -1,0 +1,1598 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Murat Koçak Lojistik – Yük Talebi</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap');
+  :root {
+    --blue: #1a3a8c;
+    --blue-light: #2a52b8;
+    --blue-pale: #e8edf8;
+    --ink: #111;
+    --line: #b0bcd8;
+    --bg: #f0f3fa;
+    --red: #c0392b;
+    --green: #1a8c4e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    font-family: 'Source Serif 4', Georgia, serif;
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 20px;
+  }
+  /* ── CONTROLS ── */
+  .controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: .5px;
+    padding: 10px 28px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform .1s, box-shadow .1s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--blue); color: #fff; box-shadow: 0 3px 12px rgba(26,58,140,.35); }
+  .btn-secondary { background: #fff; color: var(--blue); border: 2px solid var(--blue); }
+  .btn-clear { background: #fff; color: #c0392b; border: 2px solid #c0392b; }
+  /* ── SCREEN FORM CARD ── */
+  .screen-form {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 40px rgba(26,58,140,.13);
+    padding: 36px 44px;
+    width: 100%;
+    max-width: 760px;
+  }
+  /* HEADER */
+  .form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--blue);
+    gap: 16px;
+  }
+  .logo-svg-wrap { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+  .logo-svg-wrap img { max-height:72px; max-width:220px; object-fit:contain; display:block; }
+  /* CONTACT */
+  .contact-block {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 11.5px;
+    color: #333;
+    text-align: right;
+  }
+  .contact-block .contact-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 5px;
+  }
+  .contact-block .contact-row svg { flex-shrink:0; margin-top:1px; }
+  .contact-block .phone { font-weight: 700; font-size: 13.5px; color: var(--blue); }
+  /* QR + contact wrapper */
+  .header-right {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .qr-wrap {
+    cursor: pointer;
+    position: relative;
+  }
+  .qr-wrap #qrcode img, .qr-wrap #qrcode canvas {
+    width: 72px !important;
+    height: 72px !important;
+  }
+  .qr-tooltip {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 80px;
+    background: #fff;
+    border: 1.5px solid var(--blue);
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(26,58,140,.18);
+    padding: 12px;
+    z-index: 100;
+    width: 230px;
+  }
+  .qr-tooltip.open { display:block; }
+  .qr-tooltip h4 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    color: var(--blue);
+    margin-bottom: 8px;
+    font-weight: 700;
+    text-align:center;
+  }
+  .qr-action {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    text-decoration: none;
+    color: var(--ink);
+    font-size: 13px;
+    margin-bottom: 4px;
+    transition: background .15s;
+  }
+  .qr-action:hover { background: var(--blue-pale); }
+  .qr-action svg { flex-shrink:0; }
+  .qr-label-small { font-size: 10px; color: #888; display:block; }
+  /* TITLE */
+  .form-title {
+    text-align: center;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: 4px;
+    color: var(--blue);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .date-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: var(--blue);
+    font-weight: 600;
+  }
+  .date-row input {
+    border: none;
+    border-bottom: 1.5px solid var(--line);
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 13px;
+    padding: 2px 6px;
+    width: 140px;
+    outline: none;
+    background: transparent;
+  }
+  /* FIELDS */
+  .field-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    margin-bottom: 11px;
+  }
+  .field-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--blue);
+    white-space: nowrap;
+    min-width: 120px;
+    padding-bottom: 4px;
+  }
+  .field-input {
+    flex: 1;
+    border: none;
+    border-bottom: 1.5px solid var(--line);
+    outline: none;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 14px;
+    padding: 4px 6px;
+    color: var(--ink);
+    background: transparent;
+    transition: border-color .2s;
+  }
+  .field-input:focus { border-bottom-color: var(--blue-light); }
+  .field-input::placeholder { color: #bbb; font-style: italic; font-size: 12px; }
+  /* MİKTAR – iki parçalı */
+  .miktar-group {
+    flex: 1;
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  .miktar-part {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    flex: 1;
+    border-bottom: 1.5px solid var(--line);
+    padding-bottom: 4px;
+  }
+  .miktar-part input {
+    border: none;
+    outline: none;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 14px;
+    padding: 2px 4px;
+    color: var(--ink);
+    background: transparent;
+    width: 100%;
+    min-width: 0;
+  }
+  .miktar-part input:focus { outline: none; }
+  .miktar-unit {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--blue);
+    white-space: nowrap;
+    padding-bottom: 2px;
+  }
+  .miktar-sep { color: var(--line); padding-bottom: 4px; font-size: 16px; }
+  /* FİYAT + KDV */
+  .fiyat-group {
+    display: flex;
+    align-items: flex-end;
+    flex: 1;
+    border-bottom: 1.5px solid var(--line);
+    padding-bottom: 4px;
+    gap: 4px;
+  }
+  .fiyat-group input {
+    border: none;
+    outline: none;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 14px;
+    padding: 2px 4px;
+    color: var(--ink);
+    background: transparent;
+    flex: 1;
+    min-width: 0;
+  }
+  .kdv-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--blue-light);
+    white-space: nowrap;
+    padding-bottom: 2px;
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .kdv-badge.show { opacity: 1; }
+  /* GİDECEĞİ YER – dinamik satırlar */
+  .gidecegi-wrap { flex: 1; display: flex; flex-direction: column; gap: 5px; }
+  .gidecegi-row { display: flex; align-items: center; gap: 6px; }
+  .gidecegi-row input {
+    flex: 1;
+    border: none;
+    border-bottom: 1.5px solid var(--line);
+    outline: none;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 14px;
+    padding: 4px 6px;
+    color: var(--ink);
+    background: transparent;
+  }
+  .gidecegi-row input:focus { border-bottom-color: var(--blue-light); }
+  .btn-add-row, .btn-rem-row {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--blue);
+    font-size: 18px;
+    padding: 0 2px;
+    line-height: 1;
+    opacity: .7;
+    transition: opacity .15s;
+  }
+  .btn-add-row:hover, .btn-rem-row:hover { opacity: 1; }
+  .btn-rem-row { color: #c0392b; }
+  /* INFO + TAAHHÜT */
+  .info-text {
+    font-size: 11.5px;
+    color: #555;
+    line-height: 1.7;
+    text-align: justify;
+    margin: 14px 0 8px;
+    background: var(--blue-pale);
+    padding: 10px 14px;
+    border-radius: 6px;
+  }
+  .section-heading {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14.5px;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin: 14px 0 10px;
+  }
+  .sign-row { display: flex; justify-content: flex-end; margin-top: 18px; }
+  .sign-box { text-align: center; font-size: 12px; color: #666; line-height: 2; }
+  .sign-line { width: 160px; border-bottom: 1.5px solid var(--line); margin: 28px auto 0; }
+  /* ════════════════════════
+     PRINT
+  ════════════════════════ */
+  @media print {
+    @page { size: A4 landscape; margin: 7mm; }
+    body { background:#fff; padding:0; }
+    .controls, .screen-form, .modal-overlay, .toast { display:none !important; }
+    .print-sheet { display:flex !important; width:100%; height:100%; gap:5mm; }
+    .print-copy {
+      flex: 1;
+      border: .5px solid #ccc;
+      padding: 5mm 6mm;
+      font-family: Arial, sans-serif;
+      font-size: 8.5pt;
+      color: #000;
+      position: relative;
+    }
+    .print-copy:first-child { border-right: 1.5px dashed #aaa; }
+    /* print header */
+    .ph-hdr { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:2.5mm; }
+    .ph-logo-area { display:flex; align-items:center; gap:5mm; }
+    .ph-logo-area img { max-height:15mm; max-width:45mm; object-fit:contain; }
+    .ph-contact { text-align:right; font-size:6.5pt; line-height:1.8; color:#333; }
+    .ph-contact .ph-phone { font-weight:700; font-size:8pt; color:#1a3a8c; }
+    .ph-title { text-align:center; font-size:13pt; font-weight:900; letter-spacing:3px; color:#1a3a8c; margin:2mm 0 2mm; text-transform:uppercase; }
+    .ph-date { text-align:right; font-size:7.5pt; margin-bottom:1.5mm; }
+    .pf { display:flex; align-items:baseline; gap:2mm; margin-bottom:2mm; }
+    .pf label { font-size:7.5pt; font-weight:700; color:#1a3a8c; white-space:nowrap; min-width:26mm; }
+    .pf span { flex:1; border-bottom:.6pt solid #999; min-height:3.5mm; font-size:8.5pt; padding-bottom:.8mm; }
+    /* miktar print */
+    .pf-miktar { display:flex; align-items:baseline; gap:2mm; margin-bottom:2mm; }
+    .pf-miktar label { font-size:7.5pt; font-weight:700; color:#1a3a8c; white-space:nowrap; min-width:26mm; }
+    .pf-miktar-vals { flex:1; display:flex; gap:4mm; }
+    .pf-miktar-part { flex:1; display:flex; align-items:baseline; gap:1.5mm; border-bottom:.6pt solid #999; padding-bottom:.8mm; }
+    .pf-miktar-part span { font-size:8.5pt; flex:1; }
+    .pf-miktar-unit { font-size:7pt; font-weight:700; color:#1a3a8c; white-space:nowrap; }
+    .p-info { font-size:6.5pt; color:#444; line-height:1.6; text-align:justify; background:#eef0f8; padding:1.5mm 2mm; margin:2mm 0 1.5mm; }
+    .p-section { font-size:8.5pt; font-weight:900; color:#1a3a8c; letter-spacing:.5px; margin:2.5mm 0 1.5mm; text-transform:uppercase; }
+    .p-sign { text-align:right; margin-top:3mm; font-size:7.5pt; color:#555; }
+    .p-sign-line { border-bottom:.6pt solid #999; width:40mm; margin:6mm 0 0 auto; }
+    .p-copy-label { font-size:6.5pt; color:#aaa; font-style:italic; text-align:right; margin-bottom:1mm; }
+    /* gidecegi print multi-row */
+    .pf-gidecegi-rows { flex:1; display:flex; flex-direction:column; gap:1mm; }
+    .pf-gidecegi-row { border-bottom:.6pt solid #999; min-height:3.5mm; font-size:8.5pt; padding-bottom:.8mm; }
+    /* print contact icons */
+    .ph-ci { display:inline-block; width:9pt; text-align:center; }
+  }
+  .print-sheet { display:none; }
+  /* ── ŞOFÖR OTOMATİK TAMAMLAMA ── */
+  .sofor-input-wrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+  }
+  .sofor-input-wrap .field-input {
+    flex: 1;
+  }
+  .sofor-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 2px 4px;
+    color: var(--blue);
+    opacity: .55;
+    transition: opacity .15s;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .sofor-icon-btn:hover { opacity: 1; }
+  .sofor-icon-btn.no-save {
+    color: #c0392b;
+    opacity: .7;
+  }
+  .sofor-icon-btn.no-save:hover { opacity: 1; }
+  @media print { .sofor-icon-btn { display: none !important; } }
+  /* Dropdown */
+  .sofor-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1.5px solid var(--blue-light);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(26,58,140,.18);
+    z-index: 200;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .sofor-dropdown.open { display: block; }
+  .sofor-dd-item {
+    padding: 9px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--blue-pale);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: background .12s;
+  }
+  .sofor-dd-item:last-child { border-bottom: none; }
+  .sofor-dd-item:hover { background: var(--blue-pale); }
+  .sofor-dd-name {
+    font-weight: 600;
+    font-size: 13.5px;
+    color: var(--ink);
+  }
+  .sofor-dd-meta {
+    font-size: 11px;
+    color: #888;
+  }
+  .sofor-dd-empty {
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #aaa;
+    font-style: italic;
+  }
+
+  /* ════════════════════════════════════
+     AÇILIR PENCERELER (MODAL) — ortak
+  ════════════════════════════════════ */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,20,60,.45);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(26,58,140,.25);
+    padding: 28px 32px;
+    width: 100%;
+    max-width: 480px;
+    animation: modalIn .2s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-wide { max-width: 860px; }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(-16px) scale(.97); }
+    to   { opacity: 1; transform: none; }
+  }
+  .modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    gap: 12px;
+  }
+  .modal-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 1px;
+    color: var(--blue);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 26px;
+    line-height: 1;
+    color: #999;
+    padding: 0 4px;
+    transition: color .15s;
+  }
+  .modal-close:hover { color: var(--red); }
+  .modal-field { margin-bottom: 16px; }
+  .modal-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--blue);
+    margin-bottom: 5px;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+  }
+  .modal-field input {
+    width: 100%;
+    border: none;
+    border-bottom: 2px solid var(--line);
+    outline: none;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 15px;
+    padding: 6px 4px;
+    color: var(--ink);
+    background: transparent;
+    transition: border-color .2s;
+  }
+  .modal-field input:focus { border-bottom-color: var(--blue-light); }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .btn-save {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 28px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: var(--blue);
+    color: #fff;
+    transition: transform .1s;
+  }
+  .btn-save:active { transform: scale(.97); }
+  .btn-cancel {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 20px;
+    border: 2px solid var(--line);
+    border-radius: 6px;
+    cursor: pointer;
+    background: #fff;
+    color: #666;
+  }
+  .btn-cancel:hover { border-color: #999; }
+
+  /* ── AYARLAR (LOGO) ── */
+  .settings-section {
+    border: 1.5px solid var(--blue-pale);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 8px;
+  }
+  .settings-section h3 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 14px;
+  }
+  .logo-preview-box {
+    border: 1.5px dashed var(--line);
+    border-radius: 8px;
+    min-height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    background: #fafbfe;
+    margin-bottom: 14px;
+  }
+  .logo-preview-box img { max-height: 80px; max-width: 100%; object-fit: contain; }
+  .logo-preview-box .ph-default-note { color:#aaa; font-style:italic; font-size:12px; }
+  .settings-hint { font-size: 11.5px; color: #888; margin-top: 10px; line-height: 1.6; }
+
+  /* ── ŞOFÖR LİSTESİ (modal içi) ── */
+  .list-toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .search-bar {
+    background: #fff;
+    border: 1.5px solid var(--blue-pale);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 200px;
+  }
+  .search-bar svg { color: var(--blue); flex-shrink: 0; opacity: .6; }
+  .search-bar input {
+    border: none;
+    outline: none;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 15px;
+    flex: 1;
+    color: var(--ink);
+    background: transparent;
+  }
+  .search-bar input::placeholder { color: #bbb; font-style: italic; }
+  .search-count {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    color: #999;
+    white-space: nowrap;
+  }
+  .btn-new {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: .5px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: var(--blue);
+    color: #fff;
+    box-shadow: 0 3px 12px rgba(26,58,140,.3);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    transition: transform .1s;
+    white-space: nowrap;
+  }
+  .btn-new:active { transform: scale(.97); }
+  .table-card {
+    background: #fff;
+    border: 1.5px solid var(--blue-pale);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: var(--blue); color: #fff; }
+  thead th {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: .5px;
+    padding: 12px 14px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--blue-pale); transition: background .12s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--blue-pale); }
+  tbody td { padding: 11px 14px; font-size: 13.5px; color: var(--ink); vertical-align: middle; }
+  .td-no { color: #aaa; font-size: 12px; width: 28px; }
+  .td-actions { white-space: nowrap; text-align: right; }
+  .btn-edit, .btn-del {
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 5px 12px;
+    transition: opacity .15s;
+  }
+  .btn-edit { background: var(--blue-pale); color: var(--blue); }
+  .btn-del  { background: #fdecea; color: var(--red); margin-left: 6px; }
+  .btn-edit:hover { background: var(--blue); color: #fff; }
+  .btn-del:hover  { background: var(--red); color: #fff; }
+  .empty-state { text-align: center; padding: 50px 20px; color: #bbb; }
+  .empty-state svg { margin-bottom: 14px; opacity: .3; }
+  .empty-state p { font-family: 'Rajdhani', sans-serif; font-size: 18px; letter-spacing: 1px; }
+  /* SİL ONAY MODALI */
+  .del-modal .modal-title { color: var(--red); }
+  .del-modal p { font-size: 14px; color: #555; line-height: 1.7; }
+  .del-modal strong { color: var(--ink); }
+  .btn-del-confirm {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: var(--red);
+    color: #fff;
+  }
+
+  /* ── TOAST (ortak) ── */
+  .toast {
+    display: none;
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--blue);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 4px 18px rgba(26,58,140,.3);
+    z-index: 999;
+  }
+  .toast.show { display: block; animation: fadeInUp .25s ease; }
+  .toast.green { background: var(--green); }
+  @keyframes fadeInUp {
+    from { opacity:0; transform: translateY(10px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── CONTROLS ── -->
+<div class="controls">
+  <button class="btn btn-primary" onclick="printForm()">🖨️ A4 Yatay – 2 Kopya Yazdır</button>
+  <button class="btn btn-secondary" onclick="fillToday()">📅 Bugünün Tarihi</button>
+  <button class="btn btn-clear" onclick="clearForm()">🗑️ Formu Temizle</button>
+  <button class="btn btn-secondary" onclick="openSoforList()">👤 Şoför Listesi</button>
+  <button class="btn btn-secondary" onclick="openSettings()">⚙️ Ayarlar</button>
+</div>
+
+<!-- ── SCREEN FORM ── -->
+<div class="screen-form">
+  <!-- HEADER -->
+  <div class="form-header">
+    <!-- LOGO (varsayılan SVG veya kullanıcı logosu) -->
+    <div class="logo-svg-wrap" id="screenLogo"></div>
+    <!-- SAĞ: QR + İletişim -->
+    <div class="header-right">
+      <!-- QR -->
+      <div class="qr-wrap" id="qrWrap" onclick="toggleQR(event)">
+        <div id="qrcode"></div>
+        <div class="qr-tooltip" id="qrTooltip">
+          <h4>İletişim Seçenekleri</h4>
+          <a class="qr-action" href="tel:+905334839269">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z" fill="#1a3a8c"/></svg>
+            <div><strong>Ara</strong><span class="qr-label-small">0533 483 92 69</span></div>
+          </a>
+          <a class="qr-action" href="https://wa.me/905334839269" target="_blank">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            <div><strong>WhatsApp</strong><span class="qr-label-small">Mesaj gönder</span></div>
+          </a>
+          <a class="qr-action" href="https://maps.google.com/?q=Horozluhan+Mah+Şüra+Cad+Yeni+Kamyon+Garajı+No:1/A+Selçuklu+Konya" target="_blank">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#e74c3c"/></svg>
+            <div><strong>Konuma Git</strong><span class="qr-label-small">Selçuklu, Konya</span></div>
+          </a>
+          <a class="qr-action" href="mailto:bilgi@muratkocaklojistik.com">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="#1a3a8c"/></svg>
+            <div><strong>E-posta</strong><span class="qr-label-small">bilgi@muratkocaklojistik.com</span></div>
+          </a>
+        </div>
+      </div>
+      <!-- İletişim -->
+      <div class="contact-block">
+        <div class="contact-row phone">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="#1a3a8c"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+          0533 483 92 69
+        </div>
+        <div class="contact-row">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#1a3a8c" style="margin-top:2px"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+          <span>Horozluhan Mah. Şüra Cad.<br>Yeni Kamyon Garajı İçi No:1/A<br>Selçuklu / KONYA</span>
+        </div>
+        <div class="contact-row">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#1a3a8c"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          bilgi@muratkocaklojistik.com
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TITLE + DATE -->
+  <div class="form-title">Yük Talebi</div>
+  <div class="date-row">
+    <span>Tarih:</span>
+    <input type="text" id="tarih" placeholder="GG / AA / YYYY">
+  </div>
+
+  <!-- SAYIN -->
+  <div class="field-row">
+    <span class="field-label">Sayın</span>
+    <input class="field-input" id="sayin" type="text" placeholder="Firma / Kişi adı">
+  </div>
+
+  <!-- CİNSİ -->
+  <div class="field-row">
+    <span class="field-label">Cinsi</span>
+    <input class="field-input" id="cinsi" type="text" placeholder="Yük türü (örn: Yem Katkısı)">
+  </div>
+
+  <!-- GİDECEĞİ YER – dinamik -->
+  <div class="field-row" style="align-items:flex-start; padding-top:4px;">
+    <span class="field-label" style="padding-top:6px;">Gideceği Yer</span>
+    <div class="gidecegi-wrap" id="gidecegiWrap">
+      <div class="gidecegi-row">
+        <input type="text" placeholder="Varış adresi">
+        <button class="btn-add-row" onclick="addGidecegi()" title="Satır ekle">＋</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MİKTARI – KG + PALET -->
+  <div class="field-row">
+    <span class="field-label">Miktarı</span>
+    <div class="miktar-group">
+      <div class="miktar-part">
+        <input type="text" id="miktar_kg" placeholder="0">
+        <span class="miktar-unit">KG</span>
+      </div>
+      <span class="miktar-sep">/</span>
+      <div class="miktar-part">
+        <input type="text" id="miktar_palet" placeholder="0">
+        <span class="miktar-unit">PALET</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FİYATI + KDV -->
+  <div class="field-row">
+    <span class="field-label">Fiyatı</span>
+    <div class="fiyat-group">
+      <input type="text" id="fiyati" placeholder="₺ tutar" oninput="kdvCheck()">
+      <span class="kdv-badge" id="kdvBadge">+ KDV</span>
+    </div>
+  </div>
+
+  <!-- ÖDEME ŞEKLİ -->
+  <div class="field-row">
+    <span class="field-label">Ödeme Şekli</span>
+    <input class="field-input" id="odeme" type="text" placeholder="Nakit / EFT / Havale / Hesaba Havale...">
+  </div>
+
+  <p class="info-text">
+    Talebiniz üzere yukarıda özellikleri yazılı yükü nakletmek üzere aşağıda plaka ve diğer bilgileri yazılı kamyon emrinize tahsis edilmiştir.
+  </p>
+
+  <div class="section-heading">Emtiayı Teslim Alan Şoför veya Kamyon Sahibinin</div>
+
+  <div class="field-row">
+    <span class="field-label">Adı Soyadı</span>
+    <div class="sofor-input-wrap">
+      <input class="field-input" id="sofor_ad" type="text" autocomplete="off"
+             oninput="soforSearch(this.value)" onkeydown="soforKeyNav(event)">
+      <!-- İnsan silüeti: hafızaya kaydet (yazdırılmaz) -->
+      <button class="sofor-icon-btn" id="btnKaydet" onclick="soforManualSave()" title="Bu şoförü hafızaya kaydet">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <!-- Kaydetme butonu (yazdırılmaz) -->
+      <button class="sofor-icon-btn no-save" id="btnKaydetme" onclick="soforToggleNoSave()" title="Bu şoförü kaydetme">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <!-- Dropdown listesi -->
+      <div class="sofor-dropdown" id="soforDropdown"></div>
+    </div>
+  </div>
+
+  <div class="field-row">
+    <span class="field-label">T.C. Kimlik No</span>
+    <input class="field-input" id="sofor_tc" type="text" maxlength="11">
+  </div>
+  <div class="field-row">
+    <span class="field-label">Plaka No</span>
+    <input class="field-input" id="plaka" type="text">
+  </div>
+  <div class="field-row">
+    <span class="field-label">Vergi Dairesi No</span>
+    <input class="field-input" id="vergi" type="text">
+  </div>
+  <div class="field-row">
+    <span class="field-label">Referans Tel</span>
+    <input class="field-input" id="ref_tel" type="text">
+  </div>
+  <div class="field-row">
+    <span class="field-label">GSM</span>
+    <input class="field-input" id="gsm" type="text" placeholder="05__ ___ __ __">
+  </div>
+
+  <p class="info-text">
+    Yukarıda muhteviyatı yazılı yükü, belirtilen adrese eksiksiz ve kusursuz nakletmek üzere alınmış. Kabul etmiş bulunmaktayım. Yolda meydana gelebilecek zarar ve ziyandan olabilecek trafik cezalarından tamamen ben sorumlu olmak üzere ilgili yükü taşımayı taahhüt ediyorum. İhtilaf vukuunda Konya Mahkemelerinin selahiyetini kabul ederim.
+  </p>
+
+  <div class="sign-row">
+    <div class="sign-box">Adı, Soyadı<br>İmza<div class="sign-line"></div></div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     PRINT SHEET
+══════════════════════════ -->
+<div class="print-sheet" id="printSheet">
+  <div class="print-copy" id="pc1">
+    <div class="p-copy-label">Müşteri Nüshası</div>
+  </div>
+  <div class="print-copy" id="pc2">
+    <div class="p-copy-label">Şoför Nüshası</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     AYARLAR (LOGO) MODALI
+══════════════════════════ -->
+<div class="modal-overlay" id="settingsOverlay" onclick="overlayClick(event,'settingsOverlay')">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Ayarlar
+      </div>
+      <button class="modal-close" onclick="closeModals()" title="Kapat">×</button>
+    </div>
+
+    <div class="settings-section">
+      <h3>Firma Logosu</h3>
+      <div class="logo-preview-box" id="logoPreview"></div>
+      <input type="file" id="logoFileInput" accept="image/*" style="display:none" onchange="onLogoFile(this)">
+      <div class="modal-actions" style="margin-top:0;justify-content:flex-start;">
+        <button class="btn-save" onclick="document.getElementById('logoFileInput').click()">📁 Logo Yükle</button>
+        <button class="btn-cancel" onclick="removeLogo()">↺ Varsayılana Dön</button>
+      </div>
+      <p class="settings-hint">
+        Kendi logonuzu (PNG / JPG / SVG) yükleyebilirsiniz. Logo sol üstte görünür ve
+        yazdırılan fişlere de yansır. Logo bu cihazın tarayıcısında saklanır (localStorage).
+        Net baskı için geniş ve arka planı şeffaf bir görsel önerilir.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     ŞOFÖR LİSTESİ MODALI
+══════════════════════════ -->
+<div class="modal-overlay" id="soforListOverlay" onclick="overlayClick(event,'soforListOverlay')">
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <div class="modal-title">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="7" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        Kayıtlı Şoförler
+      </div>
+      <button class="modal-close" onclick="closeModals()" title="Kapat">×</button>
+    </div>
+
+    <!-- ARAÇ ÇUBUĞU -->
+    <div class="list-toolbar">
+      <div class="search-bar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="İsim, plaka veya TC ile ara…" oninput="renderTable()">
+        <span class="search-count" id="searchCount"></span>
+      </div>
+      <button class="btn-new" onclick="openNewModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Yeni Şoför Ekle
+      </button>
+    </div>
+
+    <!-- TABLO -->
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th class="td-no">#</th>
+            <th>Adı Soyadı</th>
+            <th>T.C. Kimlik No</th>
+            <th>Plaka</th>
+            <th>GSM</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="1.5"><circle cx="12" cy="7" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <p>Henüz kayıtlı şoför yok</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DÜZENLE / YENİ EKLE MODALI -->
+<div class="modal-overlay" id="editOverlay" style="z-index:600" onclick="overlayClick(event,'editOverlay')">
+  <div class="modal" id="editModal">
+    <div class="modal-head">
+      <div class="modal-title" id="editModalTitle">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="7" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        Şoför Bilgileri
+      </div>
+      <button class="modal-close" onclick="closeModals()" title="Kapat">×</button>
+    </div>
+    <div class="modal-field">
+      <label>Adı Soyadı</label>
+      <input type="text" id="m_ad" placeholder="Ad Soyad">
+    </div>
+    <div class="modal-field">
+      <label>T.C. Kimlik No</label>
+      <input type="text" id="m_tc" placeholder="11 haneli TC" maxlength="11">
+    </div>
+    <div class="modal-field">
+      <label>Plaka No</label>
+      <input type="text" id="m_plaka" placeholder="42 ABC 123">
+    </div>
+    <div class="modal-field">
+      <label>GSM</label>
+      <input type="text" id="m_tel" placeholder="05__ ___ __ __">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModals()">İptal</button>
+      <button class="btn-save" onclick="saveModal()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- SİL ONAY MODALI -->
+<div class="modal-overlay del-modal" id="delOverlay" style="z-index:600" onclick="overlayClick(event,'delOverlay')">
+  <div class="modal del-modal">
+    <div class="modal-head">
+      <div class="modal-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        Şoförü Sil
+      </div>
+      <button class="modal-close" onclick="closeModals()" title="Kapat">×</button>
+    </div>
+    <p>
+      <strong id="delName"></strong> adlı şoförü kayıtlardan silmek istediğinizden emin misiniz?<br>
+      Bu işlem geri alınamaz.
+    </p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModals()">Vazgeç</button>
+      <button class="btn-del-confirm" onclick="confirmDelete()">Evet, Sil</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════
+   ORTAK VERİ — localStorage
+   - mk_soforler : kayıtlı şoförler
+   - mk_logo     : kullanıcı logosu (dataURL)
+══════════════════════════════════════════════ */
+const STORAGE_KEY = 'mk_soforler';
+const LOGO_KEY    = 'mk_logo';
+
+function getSoforler() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch { return []; }
+}
+function setSoforler(list) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
+
+/* Ortak toast bildirimi (green=yeşil renk) */
+function showToast(msg, green = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (green ? ' green' : '');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+/* ══════════════════════════════════════════════
+   LOGO YÖNETİMİ
+══════════════════════════════════════════════ */
+const DEFAULT_LOGO_SVG = `
+  <svg width="130" height="72" viewBox="0 0 130 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="58" height="40" rx="2" fill="none" stroke="#1a3a8c" stroke-width="2.5"/>
+    <text x="5" y="34" font-family="Arial Black,Arial" font-weight="900" font-size="28" fill="#1a3a8c">M</text>
+    <text x="33" y="34" font-family="Arial Black,Arial" font-weight="900" font-size="28" fill="#1a3a8c">K</text>
+    <path d="M4 48 Q16 42 28 48 Q40 54 52 48 Q64 42 76 48" stroke="#1a3a8c" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M4 54 Q16 48 28 54 Q40 60 52 54 Q64 48 76 54" stroke="#1a3a8c" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".6"/>
+    <text x="64" y="22" font-family="Arial Black,Arial" font-weight="900" font-size="13.5" fill="#1a3a8c" letter-spacing="1">MURAT KOÇAK</text>
+    <line x1="63" y1="27" x2="128" y2="27" stroke="#1a3a8c" stroke-width="1"/>
+    <text x="72" y="40" font-family="Arial,sans-serif" font-weight="400" font-size="10" fill="#1a3a8c" letter-spacing="3">LOJİSTİK</text>
+  </svg>`;
+
+const DEFAULT_LOGO_SVG_PRINT = `
+  <svg width="105" height="56" viewBox="0 0 130 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="58" height="40" rx="2" fill="none" stroke="#1a3a8c" stroke-width="2.5"/>
+    <text x="5" y="34" font-family="Arial Black,Arial" font-weight="900" font-size="28" fill="#1a3a8c">M</text>
+    <text x="33" y="34" font-family="Arial Black,Arial" font-weight="900" font-size="28" fill="#1a3a8c">K</text>
+    <path d="M4 48 Q16 42 28 48 Q40 54 52 48 Q64 42 76 48" stroke="#1a3a8c" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M4 54 Q16 48 28 54 Q40 60 52 54 Q64 48 76 54" stroke="#1a3a8c" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".6"/>
+    <text x="64" y="22" font-family="Arial Black,Arial" font-weight="900" font-size="13.5" fill="#1a3a8c" letter-spacing="1">MURAT KOÇAK</text>
+    <line x1="63" y1="27" x2="128" y2="27" stroke="#1a3a8c" stroke-width="1"/>
+    <text x="72" y="40" font-family="Arial,sans-serif" font-weight="400" font-size="10" fill="#1a3a8c" letter-spacing="3">LOJİSTİK</text>
+  </svg>`;
+
+function getLogo() { return localStorage.getItem(LOGO_KEY) || ''; }
+
+/* Logoyu uygun yere (ekran / baskı) döndür */
+function logoMarkup(forPrint) {
+  const custom = getLogo();
+  if (custom) {
+    return `<img src="${custom}" alt="Logo">`;
+  }
+  return forPrint ? DEFAULT_LOGO_SVG_PRINT : DEFAULT_LOGO_SVG;
+}
+
+/* Ekran logosunu uygula + ayar önizlemesini güncelle */
+function applyLogo() {
+  document.getElementById('screenLogo').innerHTML = logoMarkup(false);
+  updateLogoPreview();
+}
+
+function updateLogoPreview() {
+  const box = document.getElementById('logoPreview');
+  if (!box) return;
+  const custom = getLogo();
+  box.innerHTML = custom
+    ? `<img src="${custom}" alt="Logo önizleme">`
+    : `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;">${DEFAULT_LOGO_SVG}<span class="ph-default-note">Varsayılan logo</span></div>`;
+}
+
+/* Dosya seçilince → dataURL'e çevir → sakla */
+function onLogoFile(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('⚠️ Lütfen bir resim dosyası seçin'); return; }
+  if (file.size > 1.5 * 1024 * 1024) {
+    showToast('⚠️ Logo 1.5 MB’dan küçük olmalı');
+  }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      localStorage.setItem(LOGO_KEY, e.target.result);
+      applyLogo();
+      showToast('✅ Logo güncellendi', true);
+    } catch (err) {
+      showToast('⚠️ Logo kaydedilemedi (dosya çok büyük olabilir)');
+    }
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function removeLogo() {
+  localStorage.removeItem(LOGO_KEY);
+  applyLogo();
+  showToast('↺ Varsayılan logoya dönüldü');
+}
+
+function openSettings() {
+  updateLogoPreview();
+  document.getElementById('settingsOverlay').classList.add('open');
+}
+
+/* ══════════════════════════════════════════════
+   ŞOFÖR HAFIZA SİSTEMİ (form otomatik tamamlama)
+══════════════════════════════════════════════ */
+let soforNoSave = false;      // "Kaydetme" modu
+let ddIndex = -1;             // klavye navigasyonu
+
+/* Şoför kaydet veya güncelle (tc ile eşleşme) */
+function saveSofor(sofor) {
+  const list = getSoforler();
+  const idx = list.findIndex(s => s.tc && sofor.tc && s.tc === sofor.tc);
+  if (idx >= 0) {
+    list[idx] = { ...list[idx], ...sofor };
+  } else {
+    list.push(sofor);
+  }
+  setSoforler(list);
+}
+
+/* Mevcut form değerlerinden şoför objesi */
+function currentSoforObj() {
+  return {
+    ad:    (document.getElementById('sofor_ad').value  || '').trim(),
+    tc:    (document.getElementById('sofor_tc').value  || '').trim(),
+    plaka: (document.getElementById('plaka').value     || '').trim(),
+    tel:   (document.getElementById('gsm').value       || '').trim(),
+  };
+}
+
+/* Dropdown kapat */
+function closeDropdown() {
+  document.getElementById('soforDropdown').classList.remove('open');
+  ddIndex = -1;
+}
+
+/* Şoför seçildi → formu doldur */
+function soforSec(s) {
+  document.getElementById('sofor_ad').value  = s.ad    || '';
+  document.getElementById('sofor_tc').value  = s.tc    || '';
+  document.getElementById('plaka').value     = s.plaka || '';
+  document.getElementById('gsm').value       = s.tel   || '';
+  closeDropdown();
+  soforNoSave = false;
+}
+
+/* Arama & dropdown güncelle */
+function soforSearch(val) {
+  soforNoSave = false;
+  const dd = document.getElementById('soforDropdown');
+  const q = val.trim().toLowerCase();
+  if (q.length < 1) { closeDropdown(); return; }
+  const list = getSoforler();
+  const matched = list.filter(s =>
+    (s.ad || '').toLowerCase().includes(q) ||
+    (s.plaka || '').toLowerCase().includes(q) ||
+    (s.tc || '').includes(q)
+  );
+  if (matched.length === 0) {
+    dd.innerHTML = '<div class="sofor-dd-empty">Eşleşme yok — kaydedilmedi (yazdırınca otomatik kaydedilir)</div>';
+  } else {
+    dd.innerHTML = matched.map((s, i) =>
+      `<div class="sofor-dd-item" data-idx="${i}" onclick="soforSec(soforMatchedList[${i}])">
+        <span class="sofor-dd-name">${s.ad || '—'}</span>
+        <span class="sofor-dd-meta">${s.plaka || ''} ${s.tc ? '· TC: ' + s.tc : ''}</span>
+       </div>`
+    ).join('');
+    window.soforMatchedList = matched;
+  }
+  dd.classList.add('open');
+  ddIndex = -1;
+}
+
+/* Klavye navigasyonu (↑ ↓ Enter Esc Tab) */
+function soforKeyNav(e) {
+  const dd = document.getElementById('soforDropdown');
+  const items = dd.querySelectorAll('.sofor-dd-item');
+  if (e.key === 'Tab') {
+    if (dd.classList.contains('open')) {
+      e.preventDefault();
+      closeDropdown();
+      document.getElementById('sofor_tc').focus();
+    }
+    return;
+  }
+  if (!dd.classList.contains('open')) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    ddIndex = Math.min(ddIndex + 1, items.length - 1);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    ddIndex = Math.max(ddIndex - 1, 0);
+  } else if (e.key === 'Enter' && ddIndex >= 0) {
+    e.preventDefault();
+    soforSec(window.soforMatchedList[ddIndex]);
+    return;
+  } else if (e.key === 'Escape') {
+    closeDropdown(); return;
+  }
+  items.forEach((el, i) => el.style.background = i === ddIndex ? 'var(--blue-pale)' : '');
+}
+
+/* Manuel kaydet butonu (silüet ikonu) */
+function soforManualSave() {
+  soforNoSave = false;
+  const s = currentSoforObj();
+  if (!s.ad) { showToast('⚠️ Önce isim giriniz'); return; }
+  saveSofor(s);
+  showToast('✅ ' + s.ad + ' hafızaya kaydedildi', true);
+}
+
+/* Kaydetme modu toggle (çizgili silüet) */
+function soforToggleNoSave() {
+  soforNoSave = !soforNoSave;
+  const btn = document.getElementById('btnKaydetme');
+  if (soforNoSave) {
+    btn.style.opacity = '1';
+    btn.style.color = '#c0392b';
+    showToast('🚫 Bu şoför kaydedilmeyecek');
+  } else {
+    btn.style.opacity = '.7';
+    btn.style.color = '';
+    showToast('ℹ️ Kaydetme engeli kaldırıldı');
+  }
+}
+
+/* Dropdown dışına tıklanınca kapat */
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.sofor-input-wrap')) closeDropdown();
+});
+
+/* ── QR Code ── */
+const QR_DATA = "iletisim.html";
+new QRCode(document.getElementById("qrcode"), {
+  text: QR_DATA,
+  width: 72,
+  height: 72,
+  colorDark: "#1a3a8c",
+  colorLight: "#ffffff",
+  correctLevel: QRCode.CorrectLevel.M
+});
+
+/* QR tooltip toggle */
+function toggleQR(e) {
+  e.stopPropagation();
+  document.getElementById('qrTooltip').classList.toggle('open');
+}
+document.addEventListener('click', () => {
+  document.getElementById('qrTooltip').classList.remove('open');
+});
+document.getElementById('qrTooltip').addEventListener('click', e => e.stopPropagation());
+
+/* ── Gideceği Yer rows ── */
+function addGidecegi() {
+  const wrap = document.getElementById('gidecegiWrap');
+  const row = document.createElement('div');
+  row.className = 'gidecegi-row';
+  row.innerHTML = `<input type="text" placeholder="Varış adresi">
+    <button class="btn-rem-row" onclick="remGidecegi(this)" title="Satırı sil">✕</button>`;
+  updateAddBtn();
+  wrap.appendChild(row);
+  updateAddBtn();
+}
+function remGidecegi(btn) {
+  btn.parentElement.remove();
+  updateAddBtn();
+}
+function updateAddBtn() {
+  const wrap = document.getElementById('gidecegiWrap');
+  const rows = wrap.querySelectorAll('.gidecegi-row');
+  rows.forEach((r) => {
+    r.querySelectorAll('.btn-add-row').forEach(b => b.remove());
+  });
+  const last = rows[rows.length - 1];
+  const addBtn = document.createElement('button');
+  addBtn.className = 'btn-add-row';
+  addBtn.title = 'Satır ekle';
+  addBtn.textContent = '＋';
+  addBtn.onclick = addGidecegi;
+  last.appendChild(addBtn);
+}
+
+/* ── KDV badge ── */
+function kdvCheck() {
+  const val = document.getElementById('fiyati').value.trim();
+  const badge = document.getElementById('kdvBadge');
+  badge.classList.toggle('show', val.length > 0);
+}
+
+/* ── Helpers ── */
+function v(id) { return (document.getElementById(id)||{}).value||''; }
+function fillToday() {
+  const n = new Date();
+  document.getElementById('tarih').value =
+    `${String(n.getDate()).padStart(2,'0')} / ${String(n.getMonth()+1).padStart(2,'0')} / ${n.getFullYear()}`;
+}
+function clearForm() {
+  if (!confirm('Formu temizlemek istediğinizden emin misiniz?')) return;
+  ['tarih','sayin','cinsi','miktar_kg','miktar_palet','fiyati','odeme',
+   'sofor_ad','sofor_tc','plaka','vergi','ref_tel','gsm'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('kdvBadge').classList.remove('show');
+  const wrap = document.getElementById('gidecegiWrap');
+  wrap.innerHTML = `<div class="gidecegi-row">
+    <input type="text" placeholder="Varış adresi">
+    <button class="btn-add-row" onclick="addGidecegi()" title="Satır ekle">＋</button>
+  </div>`;
+}
+
+/* ── Gideceği values ── */
+function getGidecegiValues() {
+  return Array.from(document.querySelectorAll('#gidecegiWrap input')).map(i => i.value);
+}
+
+/* ── Build print copy HTML ── */
+function buildCopyHTML(label) {
+  const gidecegi = getGidecegiValues();
+  const fiyat = v('fiyati');
+  const fiyatDisplay = fiyat ? fiyat + ' + KDV' : '';
+  const gidecegiRowsHTML = gidecegi.map(g =>
+    `<div class="pf-gidecegi-row">${g}</div>`
+  ).join('');
+  return `
+    <div class="p-copy-label">${label}</div>
+    <div class="ph-hdr">
+      <div class="ph-logo-area">${logoMarkup(true)}</div>
+      <div class="ph-contact">
+        <span class="ph-phone">&#9990; 0533 483 92 69</span><br>
+        &#9679; Horozluhan Mah. Şüra Cad.<br>
+        &nbsp;&nbsp; Yeni Kamyon Garajı İçi No:1/A Selçuklu/KONYA<br>
+        &#9993; bilgi@muratkocaklojistik.com
+      </div>
+    </div>
+    <div class="ph-title">Yük Talebi</div>
+    <div class="ph-date">Tarih: ${v('tarih')}</div>
+    <div class="pf"><label>Sayın</label><span>${v('sayin')}</span></div>
+    <div class="pf"><label>Cinsi</label><span>${v('cinsi')}</span></div>
+    <div class="pf" style="align-items:flex-start">
+      <label>Gideceği Yer</label>
+      <div class="pf-gidecegi-rows">${gidecegiRowsHTML}</div>
+    </div>
+    <div class="pf-miktar">
+      <label>Miktarı</label>
+      <div class="pf-miktar-vals">
+        <div class="pf-miktar-part"><span>${v('miktar_kg')}</span><span class="pf-miktar-unit">KG</span></div>
+        <div class="pf-miktar-part"><span>${v('miktar_palet')}</span><span class="pf-miktar-unit">PALET</span></div>
+      </div>
+    </div>
+    <div class="pf"><label>Fiyatı</label><span>${fiyatDisplay}</span></div>
+    <div class="pf"><label>Ödeme Şekli</label><span>${v('odeme')}</span></div>
+    <p class="p-info">Talebiniz üzere yukarıda özellikleri yazılı yükü nakletmek üzere aşağıda plaka ve diğer bilgileri yazılı kamyon emrinize tahsis edilmiştir.</p>
+    <div class="p-section">Emtiayı Teslim Alan Şoför veya Kamyon Sahibinin</div>
+    <div class="pf"><label>Adı Soyadı</label><span>${v('sofor_ad')}</span></div>
+    <div class="pf"><label>T.C. Kimlik No</label><span>${v('sofor_tc')}</span></div>
+    <div class="pf"><label>Plaka No</label><span>${v('plaka')}</span></div>
+    <div class="pf"><label>Vergi Dairesi No</label><span>${v('vergi')}</span></div>
+    <div class="pf"><label>Referans Tel</label><span>${v('ref_tel')}</span></div>
+    <div class="pf"><label>GSM</label><span>${v('gsm')}</span></div>
+    <p class="p-info" style="font-size:6pt;">Yukarıda muhteviyatı yazılı yükü, belirtilen adrese eksiksiz ve kusursuz nakletmek üzere alınmış. Kabul etmiş bulunmaktayım. Yolda meydana gelebilecek zarar ve ziyandan olabilecek trafik cezalarından tamamen ben sorumlu olmak üzere ilgili yükü taşımayı taahhüt ediyorum. İhtilaf vukuunda Konya Mahkemelerinin selahiyetini kabul ederim.</p>
+    <div class="p-sign">Adı, Soyadı &nbsp;&nbsp; İmza<div class="p-sign-line"></div></div>
+  `;
+}
+
+function printForm() {
+  if (!soforNoSave) {
+    const s = currentSoforObj();
+    if (s.ad) { saveSofor(s); }
+  }
+  document.getElementById('pc1').innerHTML = buildCopyHTML('Müşteri Nüshası');
+  document.getElementById('pc2').innerHTML = buildCopyHTML('Şoför Nüshası');
+  window.print();
+}
+
+/* ══════════════════════════════════════════════
+   ŞOFÖR LİSTESİ MODALI (yönetim)
+══════════════════════════════════════════════ */
+let editIndex = -1;  // -1 = yeni kayıt
+let delIndex  = -1;
+
+function openSoforList() {
+  document.getElementById('soforListOverlay').classList.add('open');
+  renderTable();
+  setTimeout(() => document.getElementById('searchInput').focus(), 100);
+}
+
+function renderTable() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const all = getSoforler();
+  const list = q
+    ? all.filter(s =>
+        (s.ad||'').toLowerCase().includes(q) ||
+        (s.tc||'').includes(q) ||
+        (s.plaka||'').toLowerCase().includes(q) ||
+        (s.tel||'').includes(q)
+      )
+    : all;
+
+  document.getElementById('searchCount').textContent =
+    all.length > 0 ? `${list.length} / ${all.length} şoför` : '';
+
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+
+  if (all.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#bbb;padding:30px;font-style:italic;font-size:13px;">Arama sonucu bulunamadı</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map((s) => {
+    const realIdx = all.findIndex(x =>
+      x.ad === s.ad && x.tc === s.tc && x.plaka === s.plaka
+    );
+    return `<tr>
+      <td class="td-no">${realIdx + 1}</td>
+      <td><strong>${esc(s.ad)}</strong></td>
+      <td style="font-family:monospace;letter-spacing:.5px">${esc(s.tc)}</td>
+      <td><span style="background:var(--blue-pale);padding:2px 8px;border-radius:4px;font-weight:700;font-size:12px;color:var(--blue)">${esc(s.plaka)}</span></td>
+      <td>${esc(s.tel)}</td>
+      <td class="td-actions">
+        <button class="btn-edit" onclick="openEditModal(${realIdx})">✏️ Düzenle</button>
+        <button class="btn-del"  onclick="openDelModal(${realIdx})">🗑 Sil</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* Yeni Ekle */
+function openNewModal() {
+  editIndex = -1;
+  document.getElementById('editModalTitle').innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Yeni Şoför Ekle`;
+  ['m_ad','m_tc','m_plaka','m_tel'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('editOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('m_ad').focus(), 100);
+}
+
+/* Düzenle */
+function openEditModal(idx) {
+  editIndex = idx;
+  const s = getSoforler()[idx];
+  if (!s) return;
+  document.getElementById('editModalTitle').innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Şoför Düzenle`;
+  document.getElementById('m_ad').value    = s.ad    || '';
+  document.getElementById('m_tc').value    = s.tc    || '';
+  document.getElementById('m_plaka').value = s.plaka || '';
+  document.getElementById('m_tel').value   = s.tel   || '';
+  document.getElementById('editOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('m_ad').focus(), 100);
+}
+
+/* Modal Kaydet */
+function saveModal() {
+  const ad    = document.getElementById('m_ad').value.trim();
+  const tc    = document.getElementById('m_tc').value.trim();
+  const plaka = document.getElementById('m_plaka').value.trim();
+  const tel   = document.getElementById('m_tel').value.trim();
+  if (!ad) {
+    document.getElementById('m_ad').focus();
+    showToast('⚠️ Ad Soyad boş bırakılamaz');
+    return;
+  }
+  const list = getSoforler();
+  if (editIndex >= 0) {
+    list[editIndex] = { ad, tc, plaka, tel };
+    showToast('✅ ' + ad + ' güncellendi', true);
+  } else {
+    list.push({ ad, tc, plaka, tel });
+    showToast('✅ ' + ad + ' eklendi', true);
+  }
+  setSoforler(list);
+  closeEditDelModals();
+  renderTable();
+}
+
+/* Sil */
+function openDelModal(idx) {
+  delIndex = idx;
+  const s = getSoforler()[idx];
+  document.getElementById('delName').textContent = s ? s.ad : '';
+  document.getElementById('delOverlay').classList.add('open');
+}
+function confirmDelete() {
+  const list = getSoforler();
+  const name = list[delIndex]?.ad || '';
+  list.splice(delIndex, 1);
+  setSoforler(list);
+  showToast('🗑 ' + name + ' silindi');
+  closeEditDelModals();
+  renderTable();
+}
+
+/* Kapat — yalnızca düzenle/sil alt pencereleri */
+function closeEditDelModals() {
+  document.getElementById('editOverlay').classList.remove('open');
+  document.getElementById('delOverlay').classList.remove('open');
+}
+
+/* Tüm açılır pencereleri kapat */
+function closeModals() {
+  ['settingsOverlay','soforListOverlay','editOverlay','delOverlay']
+    .forEach(id => document.getElementById(id).classList.remove('open'));
+}
+
+/* Arka plana tıklayınca o pencereyi kapat */
+function overlayClick(e, id) {
+  if (e.target.id === id) document.getElementById(id).classList.remove('open');
+}
+
+/* Klavye kısayolları */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModals();
+  if (e.key === 'Enter' && document.getElementById('editOverlay').classList.contains('open')) {
+    saveModal();
+  }
+});
+
+/* ── İlk yükleme ── */
+applyLogo();
+renderTable();
+</script>
+</body>
+</html>
