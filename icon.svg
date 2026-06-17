@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="96" fill="#1a3a8c"/>
+  <g fill="none" stroke="#ffffff" stroke-width="20" stroke-linejoin="round" stroke-linecap="round">
+    <path d="M256 120 L400 196 L400 348 L256 424 L112 348 L112 196 Z"/>
+    <path d="M112 196 L256 272 L400 196"/>
+    <path d="M256 272 L256 424"/>
+  </g>
+  <text x="256" y="478" font-family="Arial, sans-serif" font-size="56" font-weight="bold" fill="#ffffff" text-anchor="middle">YÜK</text>
+</svg>

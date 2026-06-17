@@ -1,0 +1,2696 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Murat Koçak Lojistik – Yük Talebi</title>
+<!-- ── Masaüstü / kurulabilir uygulama (PWA) ── -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1a3a8c">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Yük Talebi">
+<script>
+  /* "Uygulamayı Kur" olayını erken yakala (buton sonradan açılır) */
+  window.__deferredInstall = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    window.__deferredInstall = e;
+    var b = document.getElementById('btnInstall');
+    if (b) b.style.display = 'inline-block';
+  });
+  window.addEventListener('appinstalled', function () {
+    var b = document.getElementById('btnInstall');
+    if (b) b.style.display = 'none';
+  });
+  /* Service worker (çevrimdışı çalışma) */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+  }
+</script>
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  ONLINE (Supabase) MODU İÇİN: aşağıdaki satırın başındaki      ║
+  ║  yorum işaretlerini kaldırın ve CLOUD-KURULUM.md'yi izleyin.   ║
+  ╚══════════════════════════════════════════════════════════════╝
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+-->
+<script>
+  /* Hata yakalayıcı: bir şey çalışmazsa sessiz kalmasın, ekranda görünsün */
+  window.addEventListener('error', function (e) {
+    try {
+      var msg = (e && e.message) ? e.message : 'Bilinmeyen hata';
+      var box = document.getElementById('jsErrorBar');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'jsErrorBar';
+        box.style.cssText = 'position:fixed;left:0;right:0;bottom:0;background:#c0392b;color:#fff;font:13px/1.4 sans-serif;padding:10px 14px;z-index:99999;text-align:center;';
+        if (document.body) document.body.appendChild(box);
+      }
+      box.textContent = '⚠️ Hata: ' + msg;
+    } catch (_) {}
+  });
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap');
+  :root {
+    --blue: #1a3a8c;
+    --blue-light: #2a52b8;
+    --blue-pale: #e8edf8;
+    --ink: #111;
+    --line: #b0bcd8;
+    --bg: #f0f3fa;
+    --red: #c0392b;
+    --green: #1a8c4e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    font-family: 'Source Serif 4', Georgia, serif;
+    color: var(--ink);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 20px;
+  }
+  /* ── CONTROLS ── */
+  .controls {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .btn {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: .5px;
+    padding: 10px 28px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: transform .1s, box-shadow .1s;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--blue); color: #fff; box-shadow: 0 3px 12px rgba(26,58,140,.35); }
+  .btn-secondary { background: #fff; color: var(--blue); border: 2px solid var(--blue); }
+  .btn-clear { background: #fff; color: #c0392b; border: 2px solid #c0392b; }
+  /* ── SCREEN FORM CARD ── */
+  .screen-form {
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 8px 40px rgba(26,58,140,.13);
+    padding: 36px 44px;
+    width: 100%;
+    max-width: 760px;
+  }
+  /* HEADER */
+  .form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-bottom: 16px;
+    border-bottom: 2px solid var(--blue);
+    gap: 16px;
+  }
+  .logo-svg-wrap { display:flex; align-items:center; gap:12px; flex-shrink:0; }
+  .logo-svg-wrap img { max-height:72px; max-width:220px; object-fit:contain; display:block; }
+  /* CONTACT */
+  .contact-block {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 11.5px;
+    color: #333;
+    text-align: right;
+  }
+  .contact-block .contact-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 5px;
+  }
+  .contact-block .contact-row svg { flex-shrink:0; margin-top:1px; }
+  .contact-block .phone { font-weight: 700; font-size: 13.5px; color: var(--blue); }
+  /* QR + contact wrapper */
+  .header-right {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+  }
+  .qr-wrap {
+    cursor: pointer;
+    position: relative;
+  }
+  .qr-wrap #qrcode img, .qr-wrap #qrcode canvas {
+    width: 72px !important;
+    height: 72px !important;
+  }
+  .qr-tooltip {
+    display: none;
+    position: absolute;
+    right: 0;
+    top: 80px;
+    background: #fff;
+    border: 1.5px solid var(--blue);
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(26,58,140,.18);
+    padding: 12px;
+    z-index: 100;
+    width: 230px;
+  }
+  .qr-tooltip.open { display:block; }
+  .qr-tooltip h4 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    color: var(--blue);
+    margin-bottom: 8px;
+    font-weight: 700;
+    text-align:center;
+  }
+  .qr-action {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    text-decoration: none;
+    color: var(--ink);
+    font-size: 13px;
+    margin-bottom: 4px;
+    transition: background .15s;
+  }
+  .qr-action:hover { background: var(--blue-pale); }
+  .qr-action svg { flex-shrink:0; }
+  .qr-label-small { font-size: 10px; color: #888; display:block; }
+  /* TITLE */
+  .form-title {
+    text-align: center;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 26px;
+    letter-spacing: 4px;
+    color: var(--blue);
+    text-transform: uppercase;
+    margin-bottom: 16px;
+  }
+  .date-row {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    font-size: 13px;
+    color: var(--blue);
+    font-weight: 600;
+  }
+  .date-row input {
+    border: none;
+    border-bottom: 1.5px solid var(--line);
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 13px;
+    padding: 2px 6px;
+    width: 140px;
+    outline: none;
+    background: transparent;
+  }
+  /* FIELDS */
+  .field-row {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    margin-bottom: 11px;
+  }
+  .field-label {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--blue);
+    white-space: nowrap;
+    min-width: 120px;
+    padding-bottom: 4px;
+  }
+  .field-input {
+    flex: 1;
+    border: none;
+    border-bottom: 1.5px solid var(--line);
+    outline: none;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 14px;
+    padding: 4px 6px;
+    color: var(--ink);
+    background: transparent;
+    transition: border-color .2s;
+  }
+  .field-input:focus { border-bottom-color: var(--blue-light); }
+  .field-input::placeholder { color: #bbb; font-style: italic; font-size: 12px; }
+  /* MİKTAR – iki parçalı */
+  .miktar-group {
+    flex: 1;
+    display: flex;
+    gap: 8px;
+    align-items: flex-end;
+  }
+  .miktar-part {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    flex: 1;
+    border-bottom: 1.5px solid var(--line);
+    padding-bottom: 4px;
+  }
+  .miktar-part input {
+    border: none;
+    outline: none;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 14px;
+    padding: 2px 4px;
+    color: var(--ink);
+    background: transparent;
+    width: 100%;
+    min-width: 0;
+  }
+  .miktar-part input:focus { outline: none; }
+  .miktar-unit {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--blue);
+    white-space: nowrap;
+    padding-bottom: 2px;
+  }
+  .miktar-sep { color: var(--line); padding-bottom: 4px; font-size: 16px; }
+  /* FİYAT + KDV */
+  .fiyat-group {
+    display: flex;
+    align-items: flex-end;
+    flex: 1;
+    border-bottom: 1.5px solid var(--line);
+    padding-bottom: 4px;
+    gap: 4px;
+  }
+  .fiyat-group input {
+    border: none;
+    outline: none;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 14px;
+    padding: 2px 4px;
+    color: var(--ink);
+    background: transparent;
+    flex: 1;
+    min-width: 0;
+  }
+  .kdv-badge {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--blue-light);
+    white-space: nowrap;
+    padding-bottom: 2px;
+    opacity: 0;
+    transition: opacity .2s;
+  }
+  .kdv-badge.show { opacity: 1; }
+  /* GİDECEĞİ YER – dinamik satırlar */
+  .gidecegi-wrap { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+  .gidecegi-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .gidecegi-row .gd-addr {
+    flex: 1 1 150px;
+    border: none;
+    border-bottom: 1.5px solid var(--line);
+    outline: none;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 14px;
+    padding: 4px 6px;
+    color: var(--ink);
+    background: transparent;
+  }
+  .gidecegi-row .gd-addr:focus { border-bottom-color: var(--blue-light); }
+  /* satır başına KG / PALET (yalnız çok adresli modda görünür) */
+  .gd-amt { display: none; gap: 10px; align-items: flex-end; flex: 0 0 auto; }
+  .gidecegi-wrap.multi .gd-amt { display: flex; }
+  .gd-part { flex: 0 0 auto; }
+  .gd-part input { width: 64px; text-align: right; }
+  /* otomatik TOPLAM (salt-okunur) alan vurgusu */
+  .miktar-part input.total-field { background: var(--blue-pale); font-weight: 700; color: var(--blue); border-radius: 4px; cursor: default; }
+  .btn-add-row, .btn-rem-row {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--blue);
+    font-size: 18px;
+    padding: 0 2px;
+    line-height: 1;
+    opacity: .7;
+    transition: opacity .15s;
+  }
+  .btn-add-row:hover, .btn-rem-row:hover { opacity: 1; }
+  .btn-rem-row { color: #c0392b; }
+  /* INFO + TAAHHÜT */
+  .info-text {
+    font-size: 11.5px;
+    color: #555;
+    line-height: 1.7;
+    text-align: justify;
+    margin: 14px 0 8px;
+    background: var(--blue-pale);
+    padding: 10px 14px;
+    border-radius: 6px;
+  }
+  .section-heading {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14.5px;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin: 14px 0 10px;
+  }
+  .sign-row { display: flex; justify-content: flex-end; margin-top: 18px; }
+  .sign-box { text-align: center; font-size: 12px; color: #666; }
+  .sign-line { width: 160px; border-bottom: 1.5px solid var(--line); margin: 28px auto 0; }
+  .sign-name { font-weight: 600; color: var(--ink); font-size: 14px; min-height: 18px; margin-bottom: 6px; }
+  .sign-pad {
+    width: 200px;
+    height: 90px;
+    border: 1.5px dashed var(--line);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: #fafbfe;
+    overflow: hidden;
+    transition: border-color .15s, background .15s;
+  }
+  .sign-pad:hover { border-color: var(--blue-light); background: var(--blue-pale); }
+  .sign-pad img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .sign-pad span { color: #bbb; font-style: italic; font-size: 12px; }
+  .sign-caption { font-size: 11px; color: #888; margin-top: 6px; }
+  /* İmza tuvali (modal) */
+  .sig-canvas-wrap {
+    width: 100%;
+    height: 220px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  #sigCanvas { width: 100%; height: 100%; touch-action: none; cursor: crosshair; display: block; }
+  .sig-hint { font-size: 12px; color: #888; text-align: center; margin: 10px 0 0; }
+  .btn-clear-sig {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 20px;
+    border: 2px solid var(--red);
+    border-radius: 6px;
+    cursor: pointer;
+    background: #fff;
+    color: var(--red);
+    margin-right: auto;
+  }
+  /* Tek nüsha A4 oluşturma alanı (ekran dışı – indir/paylaş için) */
+  #a4Single {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 794px;
+    background: #fff;
+  }
+  /* ════════════════════════
+     PRINT
+  ════════════════════════ */
+  @media print {
+    @page { size: A4 landscape; margin: 7mm; }
+    body { background:#fff; padding:0; }
+    .controls, .screen-form, .modal-overlay, .toast { display:none !important; }
+    .print-sheet { display:flex !important; width:100%; height:100%; gap:5mm; }
+    .print-copy {
+      flex: 1;
+      border: .5px solid #ccc;
+      padding: 5mm 6mm;
+      font-family: Arial, sans-serif;
+      font-size: 8.5pt;
+      color: #000;
+      position: relative;
+    }
+    .print-copy:first-child { border-right: 1.5px dashed #aaa; }
+    /* print header */
+    .ph-hdr { display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:2.5mm; }
+    .ph-logo-area { display:flex; align-items:center; gap:5mm; }
+    .ph-logo-area img { max-height:15mm; max-width:45mm; object-fit:contain; }
+    .ph-contact { text-align:right; font-size:6.5pt; line-height:1.8; color:#333; }
+    .ph-contact .ph-phone { font-weight:700; font-size:8pt; color:#1a3a8c; }
+    .ph-title { text-align:center; font-size:13pt; font-weight:900; letter-spacing:3px; color:#1a3a8c; margin:2mm 0 2mm; text-transform:uppercase; }
+    .ph-date { text-align:right; font-size:7.5pt; margin-bottom:1.5mm; }
+    .pf { display:flex; align-items:baseline; gap:2mm; margin-bottom:2mm; }
+    .pf label { font-size:7.5pt; font-weight:700; color:#1a3a8c; white-space:nowrap; min-width:26mm; }
+    .pf span { flex:1; border-bottom:.6pt solid #999; min-height:3.5mm; font-size:8.5pt; padding-bottom:.8mm; }
+    /* miktar print */
+    .pf-miktar { display:flex; align-items:baseline; gap:2mm; margin-bottom:2mm; }
+    .pf-miktar label { font-size:7.5pt; font-weight:700; color:#1a3a8c; white-space:nowrap; min-width:26mm; }
+    .pf-miktar-vals { flex:1; display:flex; gap:4mm; }
+    .pf-miktar-part { flex:1; display:flex; align-items:baseline; gap:1.5mm; border-bottom:.6pt solid #999; padding-bottom:.8mm; }
+    .pf-miktar-part span { font-size:8.5pt; flex:1; }
+    .pf-miktar-unit { font-size:7pt; font-weight:700; color:#1a3a8c; white-space:nowrap; }
+    .p-info { font-size:6.5pt; color:#444; line-height:1.6; text-align:justify; background:#eef0f8; padding:1.5mm 2mm; margin:2mm 0 1.5mm; }
+    .p-section { font-size:8.5pt; font-weight:900; color:#1a3a8c; letter-spacing:.5px; margin:2.5mm 0 1.5mm; text-transform:uppercase; }
+    .p-sign { text-align:right; margin-top:3mm; font-size:7.5pt; color:#555; }
+    .p-sign-line { border-bottom:.6pt solid #999; width:40mm; margin:6mm 0 0 auto; }
+    .p-copy-label { font-size:6.5pt; color:#aaa; font-style:italic; text-align:right; margin-bottom:1mm; }
+    /* gidecegi print multi-row */
+    .pf-gidecegi-rows { flex:1; display:flex; flex-direction:column; gap:1mm; }
+    .pf-gidecegi-row { border-bottom:.6pt solid #999; min-height:3.5mm; font-size:8.5pt; padding-bottom:.8mm; }
+    /* print contact icons */
+    .ph-ci { display:inline-block; width:9pt; text-align:center; }
+  }
+  .print-sheet { display:none; }
+  /* ── ŞOFÖR OTOMATİK TAMAMLAMA ── */
+  .sofor-input-wrap {
+    flex: 1;
+    position: relative;
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+  }
+  .sofor-input-wrap .field-input {
+    flex: 1;
+  }
+  .sofor-icon-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0 2px 4px;
+    color: var(--blue);
+    opacity: .55;
+    transition: opacity .15s;
+    flex-shrink: 0;
+    line-height: 1;
+  }
+  .sofor-icon-btn:hover { opacity: 1; }
+  .sofor-icon-btn.no-save {
+    color: #c0392b;
+    opacity: .7;
+  }
+  .sofor-icon-btn.no-save:hover { opacity: 1; }
+  @media print { .sofor-icon-btn { display: none !important; } }
+  /* Dropdown */
+  .sofor-dropdown {
+    display: none;
+    position: absolute;
+    top: calc(100% + 4px);
+    left: 0;
+    right: 0;
+    background: #fff;
+    border: 1.5px solid var(--blue-light);
+    border-radius: 8px;
+    box-shadow: 0 8px 32px rgba(26,58,140,.18);
+    z-index: 200;
+    max-height: 220px;
+    overflow-y: auto;
+  }
+  .sofor-dropdown.open { display: block; }
+  .sofor-dd-item {
+    padding: 9px 14px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--blue-pale);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    transition: background .12s;
+  }
+  .sofor-dd-item:last-child { border-bottom: none; }
+  .sofor-dd-item:hover { background: var(--blue-pale); }
+  .sofor-dd-name {
+    font-weight: 600;
+    font-size: 13.5px;
+    color: var(--ink);
+  }
+  .sofor-dd-meta {
+    font-size: 11px;
+    color: #888;
+  }
+  .sofor-dd-empty {
+    padding: 10px 14px;
+    font-size: 12px;
+    color: #aaa;
+    font-style: italic;
+  }
+
+  /* ════════════════════════════════════
+     AÇILIR PENCERELER (MODAL) — ortak
+  ════════════════════════════════════ */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10,20,60,.45);
+    z-index: 500;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 20px 60px rgba(26,58,140,.25);
+    padding: 28px 32px;
+    width: 100%;
+    max-width: 480px;
+    animation: modalIn .2s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+  .modal-wide { max-width: 860px; }
+  @keyframes modalIn {
+    from { opacity: 0; transform: translateY(-16px) scale(.97); }
+    to   { opacity: 1; transform: none; }
+  }
+  .modal-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    gap: 12px;
+  }
+  .modal-title {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 20px;
+    letter-spacing: 1px;
+    color: var(--blue);
+    text-transform: uppercase;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .modal-close {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 26px;
+    line-height: 1;
+    color: #999;
+    padding: 0 4px;
+    transition: color .15s;
+  }
+  .modal-close:hover { color: var(--red); }
+  .modal-field { margin-bottom: 16px; }
+  .modal-field label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--blue);
+    margin-bottom: 5px;
+    letter-spacing: .3px;
+    text-transform: uppercase;
+  }
+  .modal-field input {
+    width: 100%;
+    border: none;
+    border-bottom: 2px solid var(--line);
+    outline: none;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 15px;
+    padding: 6px 4px;
+    color: var(--ink);
+    background: transparent;
+    transition: border-color .2s;
+  }
+  .modal-field input:focus { border-bottom-color: var(--blue-light); }
+  .modal-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 24px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+  .btn-save {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 28px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: var(--blue);
+    color: #fff;
+    transition: transform .1s;
+  }
+  .btn-save:active { transform: scale(.97); }
+  .btn-cancel {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 20px;
+    border: 2px solid var(--line);
+    border-radius: 6px;
+    cursor: pointer;
+    background: #fff;
+    color: #666;
+  }
+  .btn-cancel:hover { border-color: #999; }
+
+  /* ── AYARLAR (LOGO) ── */
+  .settings-section {
+    border: 1.5px solid var(--blue-pale);
+    border-radius: 10px;
+    padding: 18px;
+    margin-bottom: 8px;
+  }
+  .settings-section h3 {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 15px;
+    color: var(--blue);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 14px;
+  }
+  .logo-preview-box {
+    border: 1.5px dashed var(--line);
+    border-radius: 8px;
+    min-height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px;
+    background: #fafbfe;
+    margin-bottom: 14px;
+  }
+  .logo-preview-box img { max-height: 80px; max-width: 100%; object-fit: contain; }
+  .logo-preview-box .ph-default-note { color:#aaa; font-style:italic; font-size:12px; }
+  .settings-hint { font-size: 11.5px; color: #888; margin-top: 10px; line-height: 1.6; }
+  .theme-swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+  .theme-swatch {
+    width: 34px; height: 34px; border-radius: 50%; cursor: pointer;
+    border: 2px solid #fff; box-shadow: 0 0 0 1.5px var(--line);
+    transition: transform .1s;
+  }
+  .theme-swatch:hover { transform: scale(1.1); }
+  .theme-swatch.sel { box-shadow: 0 0 0 3px var(--ink); }
+
+  /* ── ŞOFÖR LİSTESİ (modal içi) ── */
+  .list-toolbar {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .search-bar {
+    background: #fff;
+    border: 1.5px solid var(--blue-pale);
+    border-radius: 10px;
+    padding: 10px 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 200px;
+  }
+  .search-bar svg { color: var(--blue); flex-shrink: 0; opacity: .6; }
+  .search-bar input {
+    border: none;
+    outline: none;
+    font-family: 'Source Serif 4', Georgia, serif;
+    font-size: 15px;
+    flex: 1;
+    color: var(--ink);
+    background: transparent;
+  }
+  .search-bar input::placeholder { color: #bbb; font-style: italic; }
+  .search-count {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 13px;
+    color: #999;
+    white-space: nowrap;
+  }
+  .btn-new {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: .5px;
+    padding: 10px 18px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: var(--blue);
+    color: #fff;
+    box-shadow: 0 3px 12px rgba(26,58,140,.3);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    transition: transform .1s;
+    white-space: nowrap;
+  }
+  .btn-new:active { transform: scale(.97); }
+  .table-card {
+    background: #fff;
+    border: 1.5px solid var(--blue-pale);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: var(--blue); color: #fff; }
+  thead th {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: .5px;
+    padding: 12px 14px;
+    text-align: left;
+    white-space: nowrap;
+  }
+  tbody tr { border-bottom: 1px solid var(--blue-pale); transition: background .12s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--blue-pale); }
+  tbody td { padding: 11px 14px; font-size: 13.5px; color: var(--ink); vertical-align: middle; }
+  .td-no { color: #aaa; font-size: 12px; width: 28px; }
+  .td-actions { white-space: nowrap; text-align: right; }
+  .btn-edit, .btn-del {
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    padding: 5px 12px;
+    transition: opacity .15s;
+  }
+  .btn-edit { background: var(--blue-pale); color: var(--blue); }
+  .btn-del  { background: #fdecea; color: var(--red); margin-left: 6px; }
+  .btn-edit:hover { background: var(--blue); color: #fff; }
+  .btn-del:hover  { background: var(--red); color: #fff; }
+  .empty-state { text-align: center; padding: 50px 20px; color: #bbb; }
+  .empty-state svg { margin-bottom: 14px; opacity: .3; }
+  .empty-state p { font-family: 'Rajdhani', sans-serif; font-size: 18px; letter-spacing: 1px; }
+  /* SİL ONAY MODALI */
+  .del-modal .modal-title { color: var(--red); }
+  .del-modal p { font-size: 14px; color: #555; line-height: 1.7; }
+  .del-modal strong { color: var(--ink); }
+  .btn-del-confirm {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    background: var(--red);
+    color: #fff;
+  }
+
+  /* ── TOAST (ortak) ── */
+  .toast {
+    display: none;
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--blue);
+    color: #fff;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 600;
+    font-size: 14px;
+    box-shadow: 0 4px 18px rgba(26,58,140,.3);
+    z-index: 999;
+  }
+  .toast.show { display: block; animation: fadeInUp .25s ease; }
+  .toast.green { background: var(--green); }
+  @keyframes fadeInUp {
+    from { opacity:0; transform: translateY(10px); }
+    to   { opacity:1; transform: translateY(0); }
+  }
+
+  /* ════════════════════════════════════
+     ÜST BAR (oturum)
+  ════════════════════════════════════ */
+  .topbar {
+    width: 100%;
+    max-width: 820px;
+    display: none;            /* giriş yapılınca JS açar */
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--blue);
+    color: #fff;
+    padding: 9px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    box-shadow: 0 3px 12px rgba(26,58,140,.25);
+  }
+  .topbar.show { display: flex; }
+  .topbar-brand { font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: .5px; }
+  .topbar-user { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+  .topbar-btn {
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px;
+    background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.45);
+    border-radius: 6px; padding: 6px 12px; cursor: pointer;
+  }
+  .topbar-btn:hover { background: rgba(255,255,255,.28); }
+  .admin-only { display: none; }              /* yalnız yönetici görür */
+  body.is-admin .admin-only { display: inline-block; }
+  @media print { .topbar { display: none !important; } }
+
+  /* ════════════════════════════════════
+     GİRİŞ EKRANI
+  ════════════════════════════════════ */
+  .login-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg,#1a3a8c,#0c1c4a);
+    z-index: 1000;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .login-overlay.show { display: flex; }
+  .login-card {
+    background: #fff; border-radius: 16px; padding: 34px 30px;
+    width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    animation: modalIn .25s ease;
+  }
+  .login-logo { font-size: 42px; text-align: center; }
+  .login-title { font-family:'Rajdhani',sans-serif; text-align:center; color:var(--blue); font-size:22px; margin-top:6px; letter-spacing:1px; }
+  .login-sub { text-align:center; color:#888; font-size:13px; margin-bottom:18px; }
+  .login-error { color: var(--red); font-size: 13px; min-height: 18px; margin: 4px 2px; }
+  .login-hint { color:#aaa; font-size:11.5px; text-align:center; margin-top:14px; line-height:1.5; }
+
+  /* ════════════════════════════════════
+     YÖNETİCİ – KULLANICI DÜZENLE
+  ════════════════════════════════════ */
+  .ue-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .ue-section {
+    font-family:'Rajdhani',sans-serif; font-weight:700; font-size:14px; color:var(--blue);
+    text-transform:uppercase; letter-spacing:.5px; border-bottom:2px solid var(--blue-pale);
+    padding-bottom:6px; margin-bottom:14px;
+  }
+  .ue-select, .ue-textarea {
+    width: 100%; border: none; border-bottom: 2px solid var(--line); outline: none;
+    font-family:'Source Serif 4',Georgia,serif; font-size:15px; padding:6px 4px; background:transparent; color:var(--ink);
+  }
+  .ue-textarea { border: 1.5px solid var(--line); border-radius:8px; padding:8px; resize:vertical; }
+  .ue-select:focus, .ue-textarea:focus { border-color: var(--blue-light); }
+
+  /* ════════════════════════════════════
+     TELEFON / MOBİL GÖRÜNÜM
+  ════════════════════════════════════ */
+  @media (max-width: 640px) {
+    body { padding: 14px 10px; }
+    .controls { gap: 8px; width: 100%; }
+    .controls .btn, .controls .btn-primary, .controls .btn-secondary, .controls .btn-clear {
+      flex: 1 1 46%;
+      padding: 11px 10px;
+      font-size: 13px;
+      text-align: center;
+    }
+    .screen-form { padding: 18px 15px; border-radius: 10px; }
+    .form-header { flex-direction: column; align-items: stretch; gap: 14px; }
+    .logo-svg-wrap { justify-content: center; }
+    .logo-svg-wrap img, .logo-svg-wrap svg { max-height: 60px; }
+    .header-right { justify-content: space-between; align-items: center; }
+    .contact-block { text-align: left; }
+    .contact-block .contact-row { justify-content: flex-start; }
+    .form-title { font-size: 21px; letter-spacing: 2px; }
+    .date-row { justify-content: flex-start; }
+    /* alanları alt alta diz */
+    .field-row { flex-direction: column; align-items: stretch; gap: 4px; margin-bottom: 15px; }
+    .field-label { min-width: 0; padding-bottom: 0; font-size: 12.5px; }
+    .field-input, .gidecegi-row input { font-size: 16px; } /* iOS zoom engelle */
+    .miktar-part input, .fiyat-group input, .date-row input { font-size: 16px; }
+    /* çok adresli modda KG/PALET adresin altına insin */
+    .gidecegi-wrap.multi .gd-amt { width: 100%; justify-content: flex-start; }
+    .gd-part input { width: 72px; }
+    .sofor-input-wrap { width: 100%; }
+    .sign-row { justify-content: center; }
+    .sign-pad { width: 100%; max-width: 320px; }
+    .modal { padding: 20px 16px; }
+    .modal-wide { max-width: 100%; }
+    .ue-grid { grid-template-columns: 1fr; gap: 8px; }
+    .topbar { flex-direction: column; align-items: stretch; gap: 8px; text-align: center; }
+    .topbar-user { justify-content: center; }
+    .list-toolbar { flex-direction: column; align-items: stretch; }
+    .btn-new { justify-content: center; }
+    .table-card { overflow-x: auto; }
+    table { min-width: 520px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ── ÜST BAR (oturum) ── -->
+<div class="topbar" id="topbar">
+  <div class="topbar-brand">📦 Yük Talebi</div>
+  <div class="topbar-user">
+    <span id="topUserInfo"></span>
+    <button class="topbar-btn" id="btnInstall" style="display:none" onclick="installApp()">⬇️ Uygulamayı Kur</button>
+    <button class="topbar-btn admin-only" id="btnAdminPanel" onclick="openAdmin()">🛠️ Yönetici Paneli</button>
+    <button class="topbar-btn" onclick="logout()">🚪 Çıkış</button>
+  </div>
+</div>
+
+<!-- ── CONTROLS ── -->
+<div class="controls">
+  <button class="btn btn-primary" onclick="printForm()">🖨️ A4 Yatay – 2 Kopya Yazdır</button>
+  <button class="btn btn-primary" onclick="downloadA4()">⬇️ A4 İndir (Tek Nüsha)</button>
+  <button class="btn btn-primary" onclick="shareA4()">📤 Paylaş (Tek Nüsha)</button>
+  <button class="btn btn-secondary" onclick="fillToday()">📅 Bugünün Tarihi</button>
+  <button class="btn btn-clear" onclick="clearForm()">🗑️ Formu Temizle</button>
+  <button class="btn btn-secondary" onclick="openSoforList()">👤 Şoför Listesi</button>
+  <button class="btn btn-secondary" onclick="openSettings()">⚙️ Ayarlar</button>
+</div>
+
+<!-- ── SCREEN FORM ── -->
+<div class="screen-form">
+  <!-- HEADER -->
+  <div class="form-header">
+    <!-- LOGO (varsayılan SVG veya kullanıcı logosu) -->
+    <div class="logo-svg-wrap" id="screenLogo"></div>
+    <!-- SAĞ: QR + İletişim -->
+    <div class="header-right">
+      <!-- QR -->
+      <div class="qr-wrap" id="qrWrap" onclick="toggleQR(event)">
+        <div id="qrcode"></div>
+        <div class="qr-tooltip" id="qrTooltip">
+          <h4>İletişim Seçenekleri</h4>
+          <a class="qr-action" id="qaCall" href="tel:+905334839269">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z" fill="#1a3a8c"/></svg>
+            <div><strong>Ara</strong><span class="qr-label-small" id="qaCallLbl">0533 483 92 69</span></div>
+          </a>
+          <a class="qr-action" id="qaWa" href="https://wa.me/905334839269" target="_blank">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
+            <div><strong>WhatsApp</strong><span class="qr-label-small">Mesaj gönder</span></div>
+          </a>
+          <a class="qr-action" id="qaMaps" href="https://maps.google.com/?q=Horozluhan+Mah+Şüra+Cad+Yeni+Kamyon+Garajı+No:1/A+Selçuklu+Konya" target="_blank">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#e74c3c"/></svg>
+            <div><strong>Konuma Git</strong><span class="qr-label-small">Haritada aç</span></div>
+          </a>
+          <a class="qr-action" id="qaMail" href="mailto:bilgi@muratkocaklojistik.com">
+            <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="#1a3a8c"/></svg>
+            <div><strong>E-posta</strong><span class="qr-label-small" id="qaMailLbl">bilgi@muratkocaklojistik.com</span></div>
+          </a>
+        </div>
+      </div>
+      <!-- İletişim (kullanıcıya özel – yönetici panelinden doldurulur) -->
+      <div class="contact-block">
+        <div class="contact-row phone">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="#1a3a8c"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+          <span id="cbPhone">0533 483 92 69</span>
+        </div>
+        <div class="contact-row">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#1a3a8c" style="margin-top:2px"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+          <span id="cbAddr">Horozluhan Mah. Şüra Cad.<br>Yeni Kamyon Garajı İçi No:1/A<br>Selçuklu / KONYA</span>
+        </div>
+        <div class="contact-row">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="#1a3a8c"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          <span id="cbEmail">bilgi@muratkocaklojistik.com</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TITLE + DATE -->
+  <div class="form-title">Yük Talebi</div>
+  <div class="date-row">
+    <span>Tarih:</span>
+    <input type="text" id="tarih" placeholder="GG / AA / YYYY" inputmode="numeric" oninput="formatDateInput(this)">
+  </div>
+
+  <!-- SAYIN -->
+  <div class="field-row">
+    <span class="field-label">Sayın</span>
+    <input class="field-input" id="sayin" type="text" placeholder="Firma / Kişi adı">
+  </div>
+
+  <!-- CİNSİ -->
+  <div class="field-row">
+    <span class="field-label">Cinsi</span>
+    <input class="field-input" id="cinsi" type="text" placeholder="Yük türü (örn: Yem Katkısı)">
+  </div>
+
+  <!-- GİDECEĞİ YER – dinamik -->
+  <div class="field-row" style="align-items:flex-start; padding-top:4px;">
+    <span class="field-label" style="padding-top:6px;">Gideceği Yer</span>
+    <div class="gidecegi-wrap" id="gidecegiWrap">
+      <div class="gidecegi-row">
+        <input type="text" class="gd-addr" placeholder="Varış adresi">
+        <div class="gd-amt">
+          <div class="miktar-part gd-part"><input type="text" class="gd-kg" inputmode="numeric" placeholder="0" oninput="recomputeTotals()"><span class="miktar-unit">KG</span></div>
+          <div class="miktar-part gd-part"><input type="text" class="gd-palet" inputmode="numeric" placeholder="0" oninput="recomputeTotals()"><span class="miktar-unit">PALET</span></div>
+        </div>
+        <button class="btn-add-row" onclick="addGidecegi()" title="Satır ekle">＋</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MİKTARI – KG + PALET (birden fazla adreste otomatik TOPLAM olur) -->
+  <div class="field-row">
+    <span class="field-label" id="miktarLabel">Miktarı</span>
+    <div class="miktar-group">
+      <div class="miktar-part">
+        <input type="text" id="miktar_kg" placeholder="0" inputmode="numeric">
+        <span class="miktar-unit">KG</span>
+      </div>
+      <span class="miktar-sep">/</span>
+      <div class="miktar-part">
+        <input type="text" id="miktar_palet" placeholder="0" inputmode="numeric">
+        <span class="miktar-unit">PALET</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- FİYATI + KDV -->
+  <div class="field-row">
+    <span class="field-label">Fiyatı</span>
+    <div class="fiyat-group">
+      <input type="text" id="fiyati" placeholder="₺ tutar" inputmode="decimal" oninput="kdvCheck()">
+      <span class="kdv-badge" id="kdvBadge">+ KDV</span>
+    </div>
+  </div>
+
+  <!-- ÖDEME ŞEKLİ -->
+  <div class="field-row">
+    <span class="field-label">Ödeme Şekli</span>
+    <input class="field-input" id="odeme" type="text" placeholder="Nakit / EFT / Havale / Hesaba Havale...">
+  </div>
+
+  <p class="info-text">
+    Talebiniz üzere yukarıda özellikleri yazılı yükü nakletmek üzere aşağıda plaka ve diğer bilgileri yazılı kamyon emrinize tahsis edilmiştir.
+  </p>
+
+  <div class="section-heading">Emtiayı Teslim Alan Şoför veya Kamyon Sahibinin</div>
+
+  <div class="field-row">
+    <span class="field-label">Adı Soyadı</span>
+    <div class="sofor-input-wrap">
+      <input class="field-input" id="sofor_ad" type="text" autocomplete="off"
+             oninput="soforSearch(this.value)" onkeydown="soforKeyNav(event)">
+      <!-- İnsan silüeti: hafızaya kaydet (yazdırılmaz) -->
+      <button class="sofor-icon-btn" id="btnKaydet" onclick="soforManualSave()" title="Bu şoförü hafızaya kaydet">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <!-- Kaydetme butonu (yazdırılmaz) -->
+      <button class="sofor-icon-btn no-save" id="btnKaydetme" onclick="soforToggleNoSave()" title="Bu şoförü kaydetme">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="12" cy="7" r="4" stroke="currentColor" stroke-width="1.8"/>
+          <path d="M4 20c0-4 3.6-7 8-7s8 3 8 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <line x1="4" y1="4" x2="20" y2="20" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <!-- Dropdown listesi -->
+      <div class="sofor-dropdown" id="soforDropdown"></div>
+    </div>
+  </div>
+
+  <div class="field-row">
+    <span class="field-label">T.C. Kimlik No</span>
+    <input class="field-input" id="sofor_tc" type="text" maxlength="11" inputmode="numeric">
+  </div>
+  <div class="field-row">
+    <span class="field-label">Plaka No</span>
+    <input class="field-input" id="plaka" type="text">
+  </div>
+  <div class="field-row">
+    <span class="field-label">Vergi Dairesi No</span>
+    <input class="field-input" id="vergi" type="text">
+  </div>
+  <div class="field-row">
+    <span class="field-label">Referans Tel</span>
+    <input class="field-input" id="ref_tel" type="text" inputmode="tel">
+  </div>
+  <div class="field-row">
+    <span class="field-label">GSM</span>
+    <input class="field-input" id="gsm" type="text" placeholder="05__ ___ __ __" inputmode="tel">
+  </div>
+
+  <p class="info-text">
+    Yukarıda muhteviyatı yazılı yükü, belirtilen adrese eksiksiz ve kusursuz nakletmek üzere alınmış. Kabul etmiş bulunmaktayım. Yolda meydana gelebilecek zarar ve ziyandan olabilecek trafik cezalarından tamamen ben sorumlu olmak üzere ilgili yükü taşımayı taahhüt ediyorum. İhtilaf vukuunda Konya Mahkemelerinin selahiyetini kabul ederim.
+  </p>
+
+  <div class="sign-row">
+    <div class="sign-box">
+      <div class="sign-name" id="signName">—</div>
+      <div class="sign-pad" id="signPad" onclick="openSignature()" title="İmza atmak için dokunun">
+        <img id="signImg" alt="İmza" style="display:none">
+        <span id="signPlaceholder">✍️ İmza için dokunun</span>
+      </div>
+      <div class="sign-caption">Adı, Soyadı / İmza</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     PRINT SHEET
+══════════════════════════ -->
+<div class="print-sheet" id="printSheet">
+  <div class="print-copy" id="pc1">
+    <div class="p-copy-label">Müşteri Nüshası</div>
+  </div>
+  <div class="print-copy" id="pc2">
+    <div class="p-copy-label">Şoför Nüshası</div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     AYARLAR (LOGO) MODALI
+══════════════════════════ -->
+<div class="modal-overlay" id="settingsOverlay" onclick="overlayClick(event,'settingsOverlay')">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Ayarlar
+      </div>
+      <button class="modal-close" onclick="closeModals()" title="Kapat">×</button>
+    </div>
+
+    <div class="settings-section">
+      <h3>Firma Logosu</h3>
+      <div class="logo-preview-box" id="logoPreview"></div>
+      <input type="file" id="logoFileInput" accept="image/*" style="display:none" onchange="onLogoFile(this)">
+      <div class="modal-actions" style="margin-top:0;justify-content:flex-start;">
+        <button class="btn-save" onclick="document.getElementById('logoFileInput').click()">📁 Logo Yükle</button>
+        <button class="btn-cancel" onclick="removeLogo()">↺ Varsayılana Dön</button>
+      </div>
+      <p class="settings-hint">
+        Kendi logonuzu (PNG / JPG / SVG) yükleyebilirsiniz. Logo sol üstte görünür ve
+        yazdırılan fişlere de yansır. Net baskı için geniş ve arka planı şeffaf bir görsel önerilir.
+      </p>
+    </div>
+
+    <div class="settings-section">
+      <h3>Tema Rengi (Kişiselleştir)</h3>
+      <div class="theme-swatches" id="themeSwatches"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;">
+        <label style="font-size:13px;color:#555;">Özel renk:</label>
+        <input type="color" id="themeCustom" value="#1a3a8c" onchange="setTheme(this.value)" style="width:46px;height:34px;border:none;background:none;cursor:pointer;">
+        <button class="btn-cancel" onclick="setTheme('')">↺ Varsayılan</button>
+      </div>
+      <p class="settings-hint">Seçtiğiniz renk butonlara, başlıklara ve vurgulara uygulanır; size özel bir görünüm verir.</p>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     ŞOFÖR LİSTESİ MODALI
+══════════════════════════ -->
+<div class="modal-overlay" id="soforListOverlay" onclick="overlayClick(event,'soforListOverlay')">
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <div class="modal-title">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="7" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        Kayıtlı Şoförler
+      </div>
+      <button class="modal-close" onclick="closeModals()" title="Kapat">×</button>
+    </div>
+
+    <!-- ARAÇ ÇUBUĞU -->
+    <div class="list-toolbar">
+      <div class="search-bar">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+          <circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="İsim, plaka veya TC ile ara…" oninput="renderTable()">
+        <span class="search-count" id="searchCount"></span>
+      </div>
+      <button class="btn-new" onclick="openNewModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Yeni Şoför Ekle
+      </button>
+    </div>
+
+    <!-- TABLO -->
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr>
+            <th class="td-no">#</th>
+            <th>Adı Soyadı</th>
+            <th>T.C. Kimlik No</th>
+            <th>Plaka</th>
+            <th>GSM</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="empty-state" id="emptyState" style="display:none">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#bbb" stroke-width="1.5"><circle cx="12" cy="7" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        <p>Henüz kayıtlı şoför yok</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DÜZENLE / YENİ EKLE MODALI -->
+<div class="modal-overlay" id="editOverlay" style="z-index:600" onclick="overlayClick(event,'editOverlay')">
+  <div class="modal" id="editModal">
+    <div class="modal-head">
+      <div class="modal-title" id="editModalTitle">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="7" r="4"/><path d="M4 20c0-4 3.6-7 8-7s8 3 8 7"/></svg>
+        Şoför Bilgileri
+      </div>
+      <button class="modal-close" onclick="closeModals()" title="Kapat">×</button>
+    </div>
+    <div class="modal-field">
+      <label>Adı Soyadı</label>
+      <input type="text" id="m_ad" placeholder="Ad Soyad">
+    </div>
+    <div class="modal-field">
+      <label>T.C. Kimlik No</label>
+      <input type="text" id="m_tc" placeholder="11 haneli TC" maxlength="11" inputmode="numeric">
+    </div>
+    <div class="modal-field">
+      <label>Plaka No</label>
+      <input type="text" id="m_plaka" placeholder="42 ABC 123">
+    </div>
+    <div class="modal-field">
+      <label>GSM</label>
+      <input type="text" id="m_tel" placeholder="05__ ___ __ __" inputmode="tel">
+    </div>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModals()">İptal</button>
+      <button class="btn-save" onclick="saveModal()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- SİL ONAY MODALI -->
+<div class="modal-overlay del-modal" id="delOverlay" style="z-index:600" onclick="overlayClick(event,'delOverlay')">
+  <div class="modal del-modal">
+    <div class="modal-head">
+      <div class="modal-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14H6L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/><path d="M9 6V4h6v2"/></svg>
+        Şoförü Sil
+      </div>
+      <button class="modal-close" onclick="closeModals()" title="Kapat">×</button>
+    </div>
+    <p>
+      <strong id="delName"></strong> adlı şoförü kayıtlardan silmek istediğinizden emin misiniz?<br>
+      Bu işlem geri alınamaz.
+    </p>
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModals()">Vazgeç</button>
+      <button class="btn-del-confirm" onclick="confirmDelete()">Evet, Sil</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     İMZA MODALI
+══════════════════════════ -->
+<div class="modal-overlay" id="sigOverlay" style="z-index:650" onclick="overlayClick(event,'sigOverlay')">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+        Şoför İmzası
+      </div>
+      <button class="modal-close" onclick="closeModals()" title="Kapat">×</button>
+    </div>
+    <div class="sig-canvas-wrap">
+      <canvas id="sigCanvas"></canvas>
+    </div>
+    <p class="sig-hint">Lütfen yukarıdaki alana parmağınız veya kalemle imzalayın.</p>
+    <div class="modal-actions">
+      <button class="btn-clear-sig" onclick="clearSignature()">🧹 Temizle</button>
+      <button class="btn-cancel" onclick="closeModals()">İptal</button>
+      <button class="btn-save" onclick="saveSignature()">💾 İmzayı Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tek nüsha A4 (ekran dışı – indir/paylaş çıktısı için) -->
+<div id="a4Single"></div>
+
+<!-- ══════════════════════════
+     GİRİŞ (LOGIN) EKRANI
+══════════════════════════ -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">📦</div>
+    <h2 class="login-title">Yük Talebi Girişi</h2>
+    <p class="login-sub">Devam etmek için giriş yapın</p>
+    <div class="modal-field">
+      <label>Kullanıcı Adı</label>
+      <input type="text" id="loginUser" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="modal-field">
+      <label>Şifre</label>
+      <input type="password" id="loginPass" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <button class="btn-save" style="width:100%;margin-top:6px;" onclick="doLogin()">Giriş Yap</button>
+    <p class="login-hint" id="loginHint"></p>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     YÖNETİCİ PANELİ
+══════════════════════════ -->
+<div class="modal-overlay" id="adminOverlay" onclick="overlayClick(event,'adminOverlay')">
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <div class="modal-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+        Yönetici Paneli – Kullanıcılar
+      </div>
+      <button class="modal-close" onclick="closeModals()" title="Kapat">×</button>
+    </div>
+
+    <div class="list-toolbar">
+      <div style="font-size:13px;color:#666;flex:1;">Her kullanıcıya kendi giriş bilgisi ve kendi <b>üst bilgi/QR</b> alanı verebilirsiniz.</div>
+      <button class="btn-new" onclick="adminNewUser()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Yeni Kullanıcı
+      </button>
+    </div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr><th class="td-no">#</th><th>Kullanıcı</th><th>Firma</th><th>Rol</th><th>Durum</th><th>Bitiş</th><th></th></tr>
+        </thead>
+        <tbody id="adminTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- KULLANICI DÜZENLE / EKLE MODALI -->
+<div class="modal-overlay" id="userEditOverlay" style="z-index:640" onclick="overlayClick(event,'userEditOverlay')">
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <div class="modal-title" id="userEditTitle">Kullanıcı</div>
+      <button class="modal-close" onclick="closeModals()" title="Kapat">×</button>
+    </div>
+
+    <div class="ue-grid">
+      <div>
+        <div class="ue-section">Giriş Bilgileri</div>
+        <div class="modal-field"><label>Kullanıcı Adı</label><input type="text" id="ue_user" autocomplete="off"></div>
+        <div class="modal-field"><label>Şifre</label><input type="text" id="ue_pass" autocomplete="off"></div>
+        <div class="modal-field"><label>Rol</label>
+          <select id="ue_role" class="ue-select"><option value="user">Kullanıcı</option><option value="admin">Yönetici</option></select>
+        </div>
+        <div class="modal-field"><label>Durum</label>
+          <select id="ue_active" class="ue-select"><option value="1">Aktif</option><option value="0">Pasif (giriş yapamaz)</option></select>
+        </div>
+        <div class="modal-field"><label>Abonelik Bitiş Tarihi (opsiyonel)</label><input type="date" id="ue_expiry"></div>
+      </div>
+      <div>
+        <div class="ue-section">Üst Bilgi (Antet) – bu kullanıcıya özel</div>
+        <div class="modal-field"><label>Firma / Başlık</label><input type="text" id="ue_company" placeholder="Örn: Murat Koçak Lojistik"></div>
+        <div class="modal-field"><label>Telefon</label><input type="text" id="ue_phone" inputmode="tel" placeholder="0533 000 00 00"></div>
+        <div class="modal-field"><label>Adres (çok satır olabilir)</label><textarea id="ue_addr" rows="3" class="ue-textarea" placeholder="Mah. Cad. No / İlçe / İl"></textarea></div>
+        <div class="modal-field"><label>E-posta</label><input type="text" id="ue_email" inputmode="email" placeholder="bilgi@firma.com"></div>
+        <div class="modal-field"><label>Harita Linki (opsiyonel)</label><input type="text" id="ue_maps" placeholder="https://maps.google.com/..."></div>
+        <div class="modal-field"><label>QR İçeriği (link/metin – karekod bunu açar)</label><input type="text" id="ue_qr" placeholder="https://firma.com veya tel:0533..."></div>
+        <div class="modal-field"><label>Tema Rengi</label><input type="color" id="ue_theme" value="#1a3a8c" style="width:54px;height:36px;border:none;background:none;cursor:pointer;"></div>
+        <div class="modal-field">
+          <label>Logo</label>
+          <div class="logo-preview-box" id="ue_logoPreview" style="min-height:70px;"></div>
+          <input type="file" id="ue_logoFile" accept="image/*" style="display:none" onchange="ueLogoFile(this)">
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn-cancel" type="button" onclick="document.getElementById('ue_logoFile').click()">📁 Logo Seç</button>
+            <button class="btn-cancel" type="button" onclick="ueLogoClear()">↺ Logoyu Sil</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModals()">İptal</button>
+      <button class="btn-save" onclick="adminSaveUser()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════
+   ORTAK VERİ — localStorage
+   - mk_soforler : kayıtlı şoförler
+   - mk_logo     : kullanıcı logosu (dataURL)
+══════════════════════════════════════════════ */
+const STORAGE_KEY = 'mk_soforler';
+const LOGO_KEY    = 'mk_logo';
+
+function getSoforler() {
+  try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
+  catch (e) { return []; }
+}
+function setSoforler(list) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+}
+
+/* Ortak toast bildirimi (green=yeşil renk) */
+function showToast(msg, green = false) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show' + (green ? ' green' : '');
+  clearTimeout(t._timer);
+  t._timer = setTimeout(() => t.classList.remove('show'), 2600);
+}
+
+/* ══════════════════════════════════════════════
+   LOGO YÖNETİMİ
+══════════════════════════════════════════════ */
+const DEFAULT_LOGO_SVG = `
+  <svg width="130" height="72" viewBox="0 0 130 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="58" height="40" rx="2" fill="none" stroke="#1a3a8c" stroke-width="2.5"/>
+    <text x="5" y="34" font-family="Arial Black,Arial" font-weight="900" font-size="28" fill="#1a3a8c">M</text>
+    <text x="33" y="34" font-family="Arial Black,Arial" font-weight="900" font-size="28" fill="#1a3a8c">K</text>
+    <path d="M4 48 Q16 42 28 48 Q40 54 52 48 Q64 42 76 48" stroke="#1a3a8c" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M4 54 Q16 48 28 54 Q40 60 52 54 Q64 48 76 54" stroke="#1a3a8c" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".6"/>
+    <text x="64" y="22" font-family="Arial Black,Arial" font-weight="900" font-size="13.5" fill="#1a3a8c" letter-spacing="1">MURAT KOÇAK</text>
+    <line x1="63" y1="27" x2="128" y2="27" stroke="#1a3a8c" stroke-width="1"/>
+    <text x="72" y="40" font-family="Arial,sans-serif" font-weight="400" font-size="10" fill="#1a3a8c" letter-spacing="3">LOJİSTİK</text>
+  </svg>`;
+
+const DEFAULT_LOGO_SVG_PRINT = `
+  <svg width="105" height="56" viewBox="0 0 130 72" fill="none" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1" y="1" width="58" height="40" rx="2" fill="none" stroke="#1a3a8c" stroke-width="2.5"/>
+    <text x="5" y="34" font-family="Arial Black,Arial" font-weight="900" font-size="28" fill="#1a3a8c">M</text>
+    <text x="33" y="34" font-family="Arial Black,Arial" font-weight="900" font-size="28" fill="#1a3a8c">K</text>
+    <path d="M4 48 Q16 42 28 48 Q40 54 52 48 Q64 42 76 48" stroke="#1a3a8c" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <path d="M4 54 Q16 48 28 54 Q40 60 52 54 Q64 48 76 54" stroke="#1a3a8c" stroke-width="1.5" fill="none" stroke-linecap="round" opacity=".6"/>
+    <text x="64" y="22" font-family="Arial Black,Arial" font-weight="900" font-size="13.5" fill="#1a3a8c" letter-spacing="1">MURAT KOÇAK</text>
+    <line x1="63" y1="27" x2="128" y2="27" stroke="#1a3a8c" stroke-width="1"/>
+    <text x="72" y="40" font-family="Arial,sans-serif" font-weight="400" font-size="10" fill="#1a3a8c" letter-spacing="3">LOJİSTİK</text>
+  </svg>`;
+
+/* ══════════════════════════════════════════════
+   KULLANICI / OTURUM / PROFİL (üst bilgi kişiye özel)
+   localStorage:
+     mk_users   : tüm kullanıcılar (giriş + profil)
+     mk_session : aktif oturum (kullanıcı + token)
+   NOT: Form verileri (şoför/fiş) cihazda kalır; sadece giriş
+   bilgileri ve üst bilgi/QR bu yapıda tutulur.
+══════════════════════════════════════════════ */
+const USERS_KEY = 'mk_users';
+const SESSION_KEY = 'mk_session';
+
+const DEFAULT_PROFILE = {
+  company: '',   /* boşsa varsayılan MK logosu görünür */
+  phone: '0533 483 92 69',
+  addr: 'Horozluhan Mah. Şüra Cad.\nYeni Kamyon Garajı İçi No:1/A\nSelçuklu / KONYA',
+  email: 'bilgi@muratkocaklojistik.com',
+  maps: 'https://maps.google.com/?q=Horozluhan+Mah+Şüra+Cad+Yeni+Kamyon+Garajı+No:1/A+Selçuklu+Konya',
+  qr: 'https://wa.me/905334839269',
+  logo: '',
+  theme: ''
+};
+
+let activeProfile = Object.assign({}, DEFAULT_PROFILE);
+let currentUser = null;
+
+function getUsers() { try { return JSON.parse(localStorage.getItem(USERS_KEY) || '[]'); } catch (e) { return []; } }
+function setUsers(list) { localStorage.setItem(USERS_KEY, JSON.stringify(list)); }
+function seedUsers() {
+  let list = getUsers();
+  if (!list.length) {
+    list = [{ user: 'admin', pass: 'admin', role: 'admin', active: 1, expiry: '', profile: Object.assign({}, DEFAULT_PROFILE) }];
+    setUsers(list);
+  }
+  return list;
+}
+function findUser(u) { return getUsers().find(x => (x.user || '').toLowerCase() === (u || '').toLowerCase()); }
+function isExpired(u) {
+  if (!u.expiry) return false;
+  try { return new Date(u.expiry + 'T23:59:59') < new Date(); } catch (e) { return false; }
+}
+function getSession() { try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { return null; } }
+function setSession(s) { if (s) localStorage.setItem(SESSION_KEY, JSON.stringify(s)); else localStorage.removeItem(SESSION_KEY); }
+
+function setText(id, t) { const e = document.getElementById(id); if (e) e.textContent = (t == null ? '' : t); }
+function setHref(id, h) { const e = document.getElementById(id); if (e) e.setAttribute('href', h); }
+function waNormalize(d) {
+  d = (d || '').replace(/\D/g, '');
+  if (!d) return '';
+  if (d[0] === '0') d = '90' + d.slice(1);
+  else if (d.slice(0, 2) !== '90' && d.length === 10) d = '90' + d;
+  return d;
+}
+
+/* Üst bilgiyi (logo + iletişim + QR) aktif kullanıcıya göre uygula */
+function applyProfile(p) {
+  activeProfile = Object.assign({}, DEFAULT_PROFILE, p || {});
+  applyTheme(activeProfile.theme || '');
+  const ph = activeProfile.phone || '';
+  setText('cbPhone', ph);
+  const addrEl = document.getElementById('cbAddr');
+  if (addrEl) addrEl.innerHTML = esc(activeProfile.addr || '').replace(/\n/g, '<br>');
+  setText('cbEmail', activeProfile.email || '');
+  const wa = waNormalize(ph);
+  setHref('qaCall', 'tel:' + (wa ? '+' + wa : ''));
+  setText('qaCallLbl', ph);
+  setHref('qaWa', 'https://wa.me/' + wa);
+  setHref('qaMaps', activeProfile.maps || ('https://maps.google.com/?q=' + encodeURIComponent((activeProfile.addr || '').replace(/\n/g, ' '))));
+  setHref('qaMail', 'mailto:' + (activeProfile.email || ''));
+  setText('qaMailLbl', activeProfile.email || '');
+  applyLogo();
+  renderQR(activeProfile.qr || ph || ' ');
+}
+
+/* Giriş */
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginError');
+  if (cloudEnabled()) { cloudLogin(u, p); return; }   /* online mod açıksa */
+  const rec = findUser(u);
+  if (!rec || rec.pass !== p) { err.textContent = 'Kullanıcı adı veya şifre hatalı.'; return; }
+  if (!Number(rec.active)) { err.textContent = 'Bu hesap pasif. Yönetici ile görüşün.'; return; }
+  if (isExpired(rec)) { err.textContent = 'Aboneliğiniz sona ermiş.'; return; }
+  err.textContent = '';
+  setSession({ user: rec.user, token: 't' + Date.now() + Math.floor(Math.random() * 1e6) });
+  document.getElementById('loginPass').value = '';
+  startSession(rec);
+}
+function startSession(rec) {
+  currentUser = rec;
+  document.getElementById('loginOverlay').classList.remove('show');
+  document.getElementById('topbar').classList.add('show');
+  document.body.classList.toggle('is-admin', rec.role === 'admin');
+  const comp = (rec.profile && rec.profile.company) ? rec.profile.company + ' · ' : '';
+  setText('topUserInfo', comp + rec.user + (rec.role === 'admin' ? ' (yönetici)' : ''));
+  applyProfile(rec.profile || DEFAULT_PROFILE);
+}
+function logout() {
+  setSession(null);
+  currentUser = null;
+  document.body.classList.remove('is-admin');
+  document.getElementById('topbar').classList.remove('show');
+  document.getElementById('loginOverlay').classList.add('show');
+}
+function initAuth() {
+  const list = seedUsers();
+  const onlyDefault = list.length === 1 && list[0].user === 'admin' && list[0].pass === 'admin';
+  setText('loginHint', onlyDefault ? 'İlk giriş için: kullanıcı "admin", şifre "admin" (sonra yönetici panelinden değiştirin).' : '');
+  const s = getSession();
+  const rec = s && findUser(s.user);
+  if (rec && Number(rec.active) && !isExpired(rec)) startSession(rec);
+  else { setSession(null); document.getElementById('loginOverlay').classList.add('show'); }
+}
+
+/* ── Masaüstü uygulama kurulumu ── */
+function installApp() {
+  const dp = window.__deferredInstall;
+  if (dp) { dp.prompt(); window.__deferredInstall = null; }
+  else { showToast('Tarayıcı menüsünden "Uygulamayı yükle / Kur" seçeneğini kullanın'); }
+}
+
+/* ══════════════════════════════════════════════
+   KİŞİSELLEŞTİRİLEBİLİR TEMA (renk)
+   activeProfile.theme = ana renk (hex). Boşsa varsayılan lacivert.
+══════════════════════════════════════════════ */
+const THEME_PRESETS = [
+  { name: 'Lacivert', color: '#1a3a8c' },
+  { name: 'Okyanus',  color: '#0e7490' },
+  { name: 'Zümrüt',   color: '#1a8c4e' },
+  { name: 'Bordo',    color: '#9b1c31' },
+  { name: 'Mor',      color: '#5b2a86' },
+  { name: 'Turuncu',  color: '#c0561a' },
+  { name: 'Antrasit', color: '#2c3e50' }
+];
+function hexToRgb(h) {
+  h = (h || '').replace('#', '');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  const n = parseInt(h, 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+function mixWhite(hex, amount) { /* amount: 0=renk, 1=beyaz */
+  const c = hexToRgb(hex);
+  const f = v => Math.round(v + (255 - v) * amount);
+  return `rgb(${f(c.r)},${f(c.g)},${f(c.b)})`;
+}
+function applyTheme(hex) {
+  const root = document.documentElement;
+  if (!hex) {
+    root.style.removeProperty('--blue');
+    root.style.removeProperty('--blue-light');
+    root.style.removeProperty('--blue-pale');
+    return;
+  }
+  root.style.setProperty('--blue', hex);
+  root.style.setProperty('--blue-light', mixWhite(hex, 0.22));
+  root.style.setProperty('--blue-pale', mixWhite(hex, 0.90));
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', hex);
+}
+/* Kullanıcı kendi temasını seçer (Ayarlar) */
+function setTheme(hex) {
+  activeProfile.theme = hex || '';
+  persistCurrentUser();
+  applyTheme(activeProfile.theme);
+  renderThemeSwatches();
+  showToast('🎨 Tema güncellendi', true);
+}
+function renderThemeSwatches() {
+  const box = document.getElementById('themeSwatches');
+  if (!box) return;
+  const cur = (activeProfile && activeProfile.theme) || '#1a3a8c';
+  box.innerHTML = THEME_PRESETS.map(p =>
+    `<button type="button" class="theme-swatch${p.color.toLowerCase() === cur.toLowerCase() ? ' sel' : ''}"
+       style="background:${p.color}" title="${p.name}" onclick="setTheme('${p.color}')"></button>`
+  ).join('');
+  const picker = document.getElementById('themeCustom');
+  if (picker) picker.value = /^#/.test(cur) ? cur : '#1a3a8c';
+}
+
+/* ══════════════════════════════════════════════
+   ONLINE (Supabase) – İSTEĞE BAĞLI
+   Anahtarları doldurup head'deki SDK satırını açınca online'a geçer.
+   Boşken uygulama yerel (cihaz) modunda çalışır. Detay: CLOUD-KURULUM.md
+══════════════════════════════════════════════ */
+const CLOUD = { url: '', anonKey: '' };
+let _sb = null;
+function cloudEnabled() {
+  return !!(CLOUD.url && CLOUD.anonKey && typeof window.supabase !== 'undefined');
+}
+function sb() {
+  if (!_sb && cloudEnabled()) _sb = window.supabase.createClient(CLOUD.url, CLOUD.anonKey);
+  return _sb;
+}
+/* Online giriş + TEK OTURUM: profiles.current_session'a kendi token'ımızı yazar,
+   realtime ile başka cihazdan giriş olursa bu oturumu düşürür. */
+async function cloudLogin(username, password) {
+  const err = document.getElementById('loginError');
+  try {
+    const client = sb();
+    const email = username.includes('@') ? username : (username + '@yuktalebi.app');
+    const { data, error } = await client.auth.signInWithPassword({ email, password });
+    if (error) { err.textContent = 'Kullanıcı adı veya şifre hatalı.'; return; }
+    const { data: prof } = await client.from('profiles').select('*').eq('id', data.user.id).single();
+    if (!prof || !prof.active) { err.textContent = 'Hesap pasif. Yönetici ile görüşün.'; await client.auth.signOut(); return; }
+    if (prof.expiry && new Date(prof.expiry + 'T23:59:59') < new Date()) { err.textContent = 'Aboneliğiniz sona ermiş.'; await client.auth.signOut(); return; }
+    const token = 't' + Date.now() + Math.floor(Math.random() * 1e6);
+    await client.from('profiles').update({ current_session: token }).eq('id', data.user.id);
+    window.__cloudToken = token;
+    cloudWatchSession(client, data.user.id, token);
+    err.textContent = '';
+    document.getElementById('loginPass').value = '';
+    startSession({ user: username, role: prof.role || 'user', active: 1, expiry: prof.expiry || '', profile: prof.profile || DEFAULT_PROFILE });
+  } catch (e) { err.textContent = 'Bağlantı hatası. İnternetinizi kontrol edin.'; }
+}
+function cloudWatchSession(client, uid, token) {
+  try {
+    client.channel('sess-' + uid)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: 'id=eq.' + uid },
+        payload => {
+          if (payload.new && payload.new.current_session && payload.new.current_session !== token) {
+            showToast('⚠️ Başka bir cihazdan giriş yapıldı');
+            setTimeout(logout, 1500);
+          }
+        }).subscribe();
+  } catch (e) {}
+}
+
+/* ── LOGO (aktif kullanıcının profilinden) ── */
+function getLogo() { return (activeProfile && activeProfile.logo) || ''; }
+function logoMarkup(forPrint) {
+  const p = activeProfile || {};
+  if (p.logo) return `<img src="${p.logo}" alt="Logo">`;
+  if (p.company && p.company.trim()) {
+    const size = forPrint ? '13pt' : '20px';
+    const mw = forPrint ? '48mm' : '230px';
+    return `<div style="font-family:'Rajdhani',Arial,sans-serif;font-weight:700;color:#1a3a8c;font-size:${size};line-height:1.15;max-width:${mw};">${esc(p.company)}</div>`;
+  }
+  return forPrint ? DEFAULT_LOGO_SVG_PRINT : DEFAULT_LOGO_SVG;
+}
+function applyLogo() {
+  const el = document.getElementById('screenLogo');
+  if (el) el.innerHTML = logoMarkup(false);
+  updateLogoPreview();
+}
+function updateLogoPreview() {
+  const box = document.getElementById('logoPreview');
+  if (!box) return;
+  box.innerHTML = getLogo()
+    ? `<img src="${getLogo()}" alt="Logo önizleme">`
+    : `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;">${logoMarkup(false)}<span class="ph-default-note">Mevcut görünüm (logo yüklenmedi)</span></div>`;
+}
+/* Ayarlar → giriş yapan kullanıcı kendi logosunu değiştirir */
+function onLogoFile(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { showToast('⚠️ Lütfen bir resim dosyası seçin'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      activeProfile.logo = e.target.result;
+      persistCurrentUser();
+      applyLogo();
+      showToast('✅ Logo güncellendi', true);
+    } catch (err) { showToast('⚠️ Logo kaydedilemedi (dosya çok büyük olabilir)'); }
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+function removeLogo() {
+  activeProfile.logo = '';
+  persistCurrentUser();
+  applyLogo();
+  showToast('↺ Logo kaldırıldı');
+}
+function persistCurrentUser() {
+  if (!currentUser) return;
+  currentUser.profile = activeProfile;
+  const list = getUsers();
+  const i = list.findIndex(x => (x.user || '').toLowerCase() === (currentUser.user || '').toLowerCase());
+  if (i >= 0) { list[i] = currentUser; setUsers(list); }
+}
+function openSettings() {
+  updateLogoPreview();
+  renderThemeSwatches();
+  document.getElementById('settingsOverlay').classList.add('open');
+}
+
+/* ══════════════════════════════════════════════
+   YÖNETİCİ PANELİ – kullanıcı yönetimi
+══════════════════════════════════════════════ */
+let adminEditIdx = -1;
+let ueLogoData = '';
+
+function openAdmin() {
+  if (!currentUser || currentUser.role !== 'admin') { showToast('⚠️ Bu bölüm sadece yöneticiye açıktır'); return; }
+  adminRenderTable();
+  document.getElementById('adminOverlay').classList.add('open');
+}
+function adminRenderTable() {
+  const list = getUsers();
+  document.getElementById('adminTableBody').innerHTML = list.map((u, i) => `
+    <tr>
+      <td class="td-no">${i + 1}</td>
+      <td><strong>${esc(u.user)}</strong></td>
+      <td>${esc((u.profile && u.profile.company) || '')}</td>
+      <td>${u.role === 'admin' ? 'Yönetici' : 'Kullanıcı'}</td>
+      <td>${Number(u.active) ? '<span style="color:var(--green);font-weight:700;">Aktif</span>' : '<span style="color:var(--red);">Pasif</span>'}</td>
+      <td>${esc(u.expiry || '-')}</td>
+      <td class="td-actions">
+        <button class="btn-edit" onclick="adminEditUser(${i})">✏️ Düzenle</button>
+        <button class="btn-del" onclick="adminDeleteUser(${i})">🗑 Sil</button>
+      </td>
+    </tr>`).join('');
+}
+function fillUserForm(u) {
+  document.getElementById('ue_user').value = u ? u.user : '';
+  document.getElementById('ue_pass').value = u ? u.pass : '';
+  document.getElementById('ue_role').value = u ? u.role : 'user';
+  document.getElementById('ue_active').value = u ? String(Number(u.active) ? 1 : 0) : '1';
+  document.getElementById('ue_expiry').value = (u && u.expiry) ? u.expiry : '';
+  const p = (u && u.profile) || {};
+  document.getElementById('ue_company').value = p.company || '';
+  document.getElementById('ue_phone').value = p.phone || '';
+  document.getElementById('ue_addr').value = p.addr || '';
+  document.getElementById('ue_email').value = p.email || '';
+  document.getElementById('ue_maps').value = p.maps || '';
+  document.getElementById('ue_qr').value = p.qr || '';
+  document.getElementById('ue_theme').value = p.theme || '#1a3a8c';
+  ueLogoData = p.logo || '';
+  ueRenderLogoPreview();
+}
+function adminNewUser() {
+  adminEditIdx = -1;
+  document.getElementById('userEditTitle').textContent = 'Yeni Kullanıcı';
+  fillUserForm(null);
+  document.getElementById('userEditOverlay').classList.add('open');
+}
+function adminEditUser(i) {
+  adminEditIdx = i;
+  const u = getUsers()[i]; if (!u) return;
+  document.getElementById('userEditTitle').textContent = 'Kullanıcı: ' + u.user;
+  fillUserForm(u);
+  document.getElementById('userEditOverlay').classList.add('open');
+}
+function ueRenderLogoPreview() {
+  const box = document.getElementById('ue_logoPreview');
+  if (!box) return;
+  box.innerHTML = ueLogoData
+    ? `<img src="${ueLogoData}" style="max-height:60px;">`
+    : '<span class="ph-default-note">Logo yok — firma adı yazı olarak görünür</span>';
+}
+function ueLogoFile(input) {
+  const f = input.files && input.files[0]; if (!f) return;
+  if (!f.type.startsWith('image/')) { showToast('⚠️ Resim seçin'); return; }
+  const r = new FileReader();
+  r.onload = e => { ueLogoData = e.target.result; ueRenderLogoPreview(); };
+  r.readAsDataURL(f); input.value = '';
+}
+function ueLogoClear() { ueLogoData = ''; ueRenderLogoPreview(); }
+function adminSaveUser() {
+  const user = document.getElementById('ue_user').value.trim();
+  const pass = document.getElementById('ue_pass').value;
+  if (!user) { showToast('⚠️ Kullanıcı adı gerekli'); return; }
+  if (!pass) { showToast('⚠️ Şifre gerekli'); return; }
+  const list = getUsers();
+  const dup = list.findIndex((x, idx) => idx !== adminEditIdx && (x.user || '').toLowerCase() === user.toLowerCase());
+  if (dup >= 0) { showToast('⚠️ Bu kullanıcı adı zaten kullanımda'); return; }
+  const obj = {
+    user, pass,
+    role: document.getElementById('ue_role').value,
+    active: Number(document.getElementById('ue_active').value) ? 1 : 0,
+    expiry: document.getElementById('ue_expiry').value || '',
+    profile: {
+      company: document.getElementById('ue_company').value.trim(),
+      phone: document.getElementById('ue_phone').value.trim(),
+      addr: document.getElementById('ue_addr').value.trim(),
+      email: document.getElementById('ue_email').value.trim(),
+      maps: document.getElementById('ue_maps').value.trim(),
+      qr: document.getElementById('ue_qr').value.trim(),
+      theme: document.getElementById('ue_theme').value || '',
+      logo: ueLogoData || ''
+    }
+  };
+  if (adminEditIdx >= 0) list[adminEditIdx] = obj; else list.push(obj);
+  setUsers(list);
+  if (currentUser && obj.user.toLowerCase() === currentUser.user.toLowerCase()) {
+    currentUser = obj;
+    document.body.classList.toggle('is-admin', obj.role === 'admin');
+    applyProfile(obj.profile);
+  }
+  document.getElementById('userEditOverlay').classList.remove('open');
+  adminRenderTable();
+  showToast('✅ Kaydedildi', true);
+}
+function adminDeleteUser(i) {
+  const list = getUsers(); const u = list[i]; if (!u) return;
+  if (currentUser && u.user.toLowerCase() === currentUser.user.toLowerCase()) { showToast('⚠️ Kendi hesabınızı silemezsiniz'); return; }
+  if (!confirm(u.user + ' kullanıcısı silinsin mi? Bu işlem geri alınamaz.')) return;
+  list.splice(i, 1); setUsers(list); adminRenderTable(); showToast('🗑 Kullanıcı silindi');
+}
+
+/* ══════════════════════════════════════════════
+   ŞOFÖR HAFIZA SİSTEMİ (form otomatik tamamlama)
+══════════════════════════════════════════════ */
+let soforNoSave = false;      // "Kaydetme" modu
+let ddIndex = -1;             // klavye navigasyonu
+
+/* Şoför kaydet veya güncelle (tc ile eşleşme) */
+function saveSofor(sofor) {
+  const list = getSoforler();
+  const idx = list.findIndex(s => s.tc && sofor.tc && s.tc === sofor.tc);
+  if (idx >= 0) {
+    list[idx] = { ...list[idx], ...sofor };
+  } else {
+    list.push(sofor);
+  }
+  setSoforler(list);
+}
+
+/* Mevcut form değerlerinden şoför objesi */
+function currentSoforObj() {
+  return {
+    ad:    (document.getElementById('sofor_ad').value  || '').trim(),
+    tc:    (document.getElementById('sofor_tc').value  || '').trim(),
+    plaka: (document.getElementById('plaka').value     || '').trim(),
+    tel:   (document.getElementById('gsm').value       || '').trim(),
+  };
+}
+
+/* Dropdown kapat */
+function closeDropdown() {
+  document.getElementById('soforDropdown').classList.remove('open');
+  ddIndex = -1;
+}
+
+/* Şoför seçildi → formu doldur */
+function soforSec(s) {
+  document.getElementById('sofor_ad').value  = s.ad    || '';
+  document.getElementById('sofor_tc').value  = s.tc    || '';
+  document.getElementById('plaka').value     = s.plaka || '';
+  document.getElementById('gsm').value       = s.tel   || '';
+  closeDropdown();
+  soforNoSave = false;
+  renderSignBox();
+}
+
+/* Arama & dropdown güncelle */
+function soforSearch(val) {
+  soforNoSave = false;
+  renderSignBox();
+  const dd = document.getElementById('soforDropdown');
+  const q = val.trim().toLowerCase();
+  if (q.length < 1) { closeDropdown(); return; }
+  const list = getSoforler();
+  const matched = list.filter(s =>
+    (s.ad || '').toLowerCase().includes(q) ||
+    (s.plaka || '').toLowerCase().includes(q) ||
+    (s.tc || '').includes(q)
+  );
+  if (matched.length === 0) {
+    dd.innerHTML = '<div class="sofor-dd-empty">Eşleşme yok — kaydedilmedi (yazdırınca otomatik kaydedilir)</div>';
+  } else {
+    dd.innerHTML = matched.map((s, i) =>
+      `<div class="sofor-dd-item" data-idx="${i}" onclick="soforSec(soforMatchedList[${i}])">
+        <span class="sofor-dd-name">${s.ad || '—'}</span>
+        <span class="sofor-dd-meta">${s.plaka || ''} ${s.tc ? '· TC: ' + s.tc : ''}</span>
+       </div>`
+    ).join('');
+    window.soforMatchedList = matched;
+  }
+  dd.classList.add('open');
+  ddIndex = -1;
+}
+
+/* Klavye navigasyonu (↑ ↓ Enter Esc Tab) */
+function soforKeyNav(e) {
+  const dd = document.getElementById('soforDropdown');
+  const items = dd.querySelectorAll('.sofor-dd-item');
+  if (e.key === 'Tab') {
+    if (dd.classList.contains('open')) {
+      e.preventDefault();
+      closeDropdown();
+      document.getElementById('sofor_tc').focus();
+    }
+    return;
+  }
+  if (!dd.classList.contains('open')) return;
+  if (e.key === 'ArrowDown') {
+    e.preventDefault();
+    ddIndex = Math.min(ddIndex + 1, items.length - 1);
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault();
+    ddIndex = Math.max(ddIndex - 1, 0);
+  } else if (e.key === 'Enter' && ddIndex >= 0) {
+    e.preventDefault();
+    soforSec(window.soforMatchedList[ddIndex]);
+    return;
+  } else if (e.key === 'Escape') {
+    closeDropdown(); return;
+  }
+  items.forEach((el, i) => el.style.background = i === ddIndex ? 'var(--blue-pale)' : '');
+}
+
+/* Manuel kaydet butonu (silüet ikonu) */
+function soforManualSave() {
+  soforNoSave = false;
+  const s = currentSoforObj();
+  if (!s.ad) { showToast('⚠️ Önce isim giriniz'); return; }
+  saveSofor(s);
+  showToast('✅ ' + s.ad + ' hafızaya kaydedildi', true);
+}
+
+/* Kaydetme modu toggle (çizgili silüet) */
+function soforToggleNoSave() {
+  soforNoSave = !soforNoSave;
+  const btn = document.getElementById('btnKaydetme');
+  if (soforNoSave) {
+    btn.style.opacity = '1';
+    btn.style.color = '#c0392b';
+    showToast('🚫 Bu şoför kaydedilmeyecek');
+  } else {
+    btn.style.opacity = '.7';
+    btn.style.color = '';
+    showToast('ℹ️ Kaydetme engeli kaldırıldı');
+  }
+}
+
+/* Dropdown dışına tıklanınca kapat */
+document.addEventListener('click', (e) => {
+  if (!e.target.closest('.sofor-input-wrap')) closeDropdown();
+});
+
+/* ── QR Code ── (içerik kullanıcı profilinden gelir; kütüphane yoksa sayfa yine çalışır) */
+function renderQR(text) {
+  try {
+    if (typeof QRCode === 'undefined') return;
+    const box = document.getElementById('qrcode');
+    box.innerHTML = '';
+    new QRCode(box, {
+      text: text || ' ',
+      width: 72,
+      height: 72,
+      colorDark: "#1a3a8c",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  } catch (e) { /* QR oluşturulamadı, önemli değil */ }
+}
+
+/* QR tooltip toggle */
+function toggleQR(e) {
+  e.stopPropagation();
+  document.getElementById('qrTooltip').classList.toggle('open');
+}
+document.addEventListener('click', () => {
+  document.getElementById('qrTooltip').classList.remove('open');
+});
+document.getElementById('qrTooltip').addEventListener('click', e => e.stopPropagation());
+
+/* ── Gideceği Yer rows ── */
+/* Bir satırın iç markup'ı (adres + satıra özel KG/PALET). Butonlar ayrı eklenir. */
+function gidecegiInner() {
+  return `<input type="text" class="gd-addr" placeholder="Varış adresi">
+    <div class="gd-amt">
+      <div class="miktar-part gd-part"><input type="text" class="gd-kg" inputmode="numeric" placeholder="0" oninput="recomputeTotals()"><span class="miktar-unit">KG</span></div>
+      <div class="miktar-part gd-part"><input type="text" class="gd-palet" inputmode="numeric" placeholder="0" oninput="recomputeTotals()"><span class="miktar-unit">PALET</span></div>
+    </div>`;
+}
+function addGidecegi() {
+  const wrap = document.getElementById('gidecegiWrap');
+  const row = document.createElement('div');
+  row.className = 'gidecegi-row';
+  row.innerHTML = gidecegiInner() +
+    `<button class="btn-rem-row" onclick="remGidecegi(this)" title="Satırı sil">✕</button>`;
+  wrap.appendChild(row);
+  updateAddBtn();
+  refreshGidecegiMode();
+}
+function remGidecegi(btn) {
+  btn.parentElement.remove();
+  updateAddBtn();
+  refreshGidecegiMode();
+}
+function updateAddBtn() {
+  const wrap = document.getElementById('gidecegiWrap');
+  const rows = wrap.querySelectorAll('.gidecegi-row');
+  rows.forEach((r) => {
+    r.querySelectorAll('.btn-add-row').forEach(b => b.remove());
+  });
+  const last = rows[rows.length - 1];
+  const addBtn = document.createElement('button');
+  addBtn.className = 'btn-add-row';
+  addBtn.title = 'Satır ekle';
+  addBtn.textContent = '＋';
+  addBtn.onclick = addGidecegi;
+  last.appendChild(addBtn);
+}
+
+/* Sayı ayrıştırma (virgül/nokta toleranslı) */
+function gdNum(x) {
+  const n = parseFloat(String(x || '').replace(',', '.').replace(/[^\d.]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+function gdFmt(n) {
+  if (!n) return '';
+  return Number.isInteger(n) ? String(n) : String(parseFloat(n.toFixed(2)));
+}
+
+/* Çok adresli mod aktif mi? (1'den fazla satır) -> satır başına KG/PALET açılır,
+   "Miktarı" alanı otomatik TOPLAM olur ve salt-okunur hale gelir. */
+function refreshGidecegiMode() {
+  const wrap = document.getElementById('gidecegiWrap');
+  const rows = wrap.querySelectorAll('.gidecegi-row');
+  const multi = rows.length > 1;
+  wrap.classList.toggle('multi', multi);
+
+  const kg = document.getElementById('miktar_kg');
+  const pal = document.getElementById('miktar_palet');
+  const label = document.getElementById('miktarLabel');
+
+  if (multi) {
+    kg.readOnly = true; pal.readOnly = true;
+    kg.classList.add('total-field'); pal.classList.add('total-field');
+    if (label) label.textContent = 'Toplam Miktarı';
+    recomputeTotals();
+  } else {
+    kg.readOnly = false; pal.readOnly = false;
+    kg.classList.remove('total-field'); pal.classList.remove('total-field');
+    if (label) label.textContent = 'Miktarı';
+  }
+}
+
+/* Satır başına KG/PALET değerlerini toplayıp "Miktarı" alanına yaz */
+function recomputeTotals() {
+  const wrap = document.getElementById('gidecegiWrap');
+  if (!wrap.classList.contains('multi')) return;
+  let kg = 0, pal = 0;
+  wrap.querySelectorAll('.gd-kg').forEach(i => kg += gdNum(i.value));
+  wrap.querySelectorAll('.gd-palet').forEach(i => pal += gdNum(i.value));
+  document.getElementById('miktar_kg').value = gdFmt(kg);
+  document.getElementById('miktar_palet').value = gdFmt(pal);
+}
+
+/* Her satırın verisi: { addr, kg, palet } */
+function getGidecegiData() {
+  return Array.from(document.querySelectorAll('#gidecegiWrap .gidecegi-row')).map(r => ({
+    addr:  ((r.querySelector('.gd-addr')  || {}).value || ''),
+    kg:    ((r.querySelector('.gd-kg')    || {}).value || ''),
+    palet: ((r.querySelector('.gd-palet') || {}).value || '')
+  }));
+}
+
+/* ── KDV badge ── */
+function kdvCheck() {
+  const val = document.getElementById('fiyati').value.trim();
+  const badge = document.getElementById('kdvBadge');
+  badge.classList.toggle('show', val.length > 0);
+}
+
+/* ── Helpers ── */
+function v(id) { return (document.getElementById(id)||{}).value||''; }
+/* Numerik klavyeyle tarih girişi: rakamları GG / AA / YYYY biçimine çevir */
+function formatDateInput(el) {
+  let d = (el.value || '').replace(/\D/g, '').slice(0, 8);
+  let out = d.slice(0, 2);
+  if (d.length >= 3) out += ' / ' + d.slice(2, 4);
+  if (d.length >= 5) out += ' / ' + d.slice(4, 8);
+  el.value = out;
+}
+function fillToday() {
+  const n = new Date();
+  document.getElementById('tarih').value =
+    `${String(n.getDate()).padStart(2,'0')} / ${String(n.getMonth()+1).padStart(2,'0')} / ${n.getFullYear()}`;
+}
+function clearForm() {
+  if (!confirm('Formu temizlemek istediğinizden emin misiniz?')) return;
+  ['tarih','sayin','cinsi','miktar_kg','miktar_palet','fiyati','odeme',
+   'sofor_ad','sofor_tc','plaka','vergi','ref_tel','gsm'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.value = '';
+  });
+  document.getElementById('kdvBadge').classList.remove('show');
+  const wrap = document.getElementById('gidecegiWrap');
+  wrap.innerHTML = `<div class="gidecegi-row">
+    ${gidecegiInner()}
+    <button class="btn-add-row" onclick="addGidecegi()" title="Satır ekle">＋</button>
+  </div>`;
+  refreshGidecegiMode();
+  signatureData = null;
+  renderSignBox();
+}
+
+/* ── Gideceği values (yalnız adresler) ── */
+function getGidecegiValues() {
+  return Array.from(document.querySelectorAll('#gidecegiWrap .gd-addr')).map(i => i.value);
+}
+
+/* QR kodu görselini (dataURL) al — PDF/yazdırma çıktısına gömmek için */
+function getQrDataUrl() {
+  const box = document.getElementById('qrcode');
+  if (!box) return '';
+  const cv = box.querySelector('canvas');
+  if (cv) { try { return cv.toDataURL('image/png'); } catch (e) {} }
+  const im = box.querySelector('img');
+  if (im && im.src) return im.src;
+  return '';
+}
+
+/* Çoklu adres modunda mı? */
+function isMultiGidecegi() {
+  const w = document.getElementById('gidecegiWrap');
+  return !!(w && w.classList.contains('multi'));
+}
+
+/* ── Build print copy HTML ── */
+function buildCopyHTML(label) {
+  const data = getGidecegiData();
+  const multi = isMultiGidecegi();
+  const fiyat = v('fiyati');
+  const fiyatDisplay = fiyat ? fiyat + ' + KDV' : '';
+  const gidecegiRowsHTML = data.map(d => {
+    const amt = (multi && (d.kg || d.palet))
+      ? ` <b style="color:#1a3a8c;">— ${d.kg || '0'} KG / ${d.palet || '0'} PALET</b>`
+      : '';
+    return `<div class="pf-gidecegi-row">${d.addr || ''}${amt}</div>`;
+  }).join('');
+  const qr = getQrDataUrl();
+  return `
+    <div class="p-copy-label">${label}</div>
+    <div class="ph-hdr">
+      <div class="ph-logo-area">${logoMarkup(true)}</div>
+      <div class="ph-contact">
+        <span class="ph-phone">&#9990; ${esc(activeProfile.phone || '')}</span><br>
+        &#9679; ${esc(activeProfile.addr || '').replace(/\n/g, '<br>&nbsp;&nbsp; ')}<br>
+        &#9993; ${esc(activeProfile.email || '')}
+      </div>
+      ${qr ? `<img src="${qr}" style="width:16mm;height:16mm;margin-left:3mm;flex-shrink:0;">` : ''}
+    </div>
+    <div class="ph-title">Yük Talebi</div>
+    <div class="ph-date">Tarih: ${v('tarih')}</div>
+    <div class="pf"><label>Sayın</label><span>${v('sayin')}</span></div>
+    <div class="pf"><label>Cinsi</label><span>${v('cinsi')}</span></div>
+    <div class="pf" style="align-items:flex-start">
+      <label>Gideceği Yer</label>
+      <div class="pf-gidecegi-rows">${gidecegiRowsHTML}</div>
+    </div>
+    <div class="pf-miktar">
+      <label>${multi ? 'Toplam Miktarı' : 'Miktarı'}</label>
+      <div class="pf-miktar-vals">
+        <div class="pf-miktar-part"><span>${v('miktar_kg')}</span><span class="pf-miktar-unit">KG</span></div>
+        <div class="pf-miktar-part"><span>${v('miktar_palet')}</span><span class="pf-miktar-unit">PALET</span></div>
+      </div>
+    </div>
+    <div class="pf"><label>Fiyatı</label><span>${fiyatDisplay}</span></div>
+    <div class="pf"><label>Ödeme Şekli</label><span>${v('odeme')}</span></div>
+    <p class="p-info">Talebiniz üzere yukarıda özellikleri yazılı yükü nakletmek üzere aşağıda plaka ve diğer bilgileri yazılı kamyon emrinize tahsis edilmiştir.</p>
+    <div class="p-section">Emtiayı Teslim Alan Şoför veya Kamyon Sahibinin</div>
+    <div class="pf"><label>Adı Soyadı</label><span>${v('sofor_ad')}</span></div>
+    <div class="pf"><label>T.C. Kimlik No</label><span>${v('sofor_tc')}</span></div>
+    <div class="pf"><label>Plaka No</label><span>${v('plaka')}</span></div>
+    <div class="pf"><label>Vergi Dairesi No</label><span>${v('vergi')}</span></div>
+    <div class="pf"><label>Referans Tel</label><span>${v('ref_tel')}</span></div>
+    <div class="pf"><label>GSM</label><span>${v('gsm')}</span></div>
+    <p class="p-info" style="font-size:6pt;">Yukarıda muhteviyatı yazılı yükü, belirtilen adrese eksiksiz ve kusursuz nakletmek üzere alınmış. Kabul etmiş bulunmaktayım. Yolda meydana gelebilecek zarar ve ziyandan olabilecek trafik cezalarından tamamen ben sorumlu olmak üzere ilgili yükü taşımayı taahhüt ediyorum. İhtilaf vukuunda Konya Mahkemelerinin selahiyetini kabul ederim.</p>
+    <div class="p-sign">
+      <div style="font-weight:700;">${v('sofor_ad')}</div>
+      ${signatureData ? `<img src="${signatureData}" style="height:13mm;max-width:42mm;object-fit:contain;display:block;margin:1mm 0 0 auto;">` : ''}
+      <div class="p-sign-line"></div>
+      Adı, Soyadı / İmza
+    </div>
+  `;
+}
+
+/* Yazdırma/indirme/paylaşım öncesi şoförü otomatik kaydet */
+function autoSaveSofor() {
+  if (!soforNoSave) {
+    const s = currentSoforObj();
+    if (s.ad) { saveSofor(s); }
+  }
+}
+
+function printForm() {
+  autoSaveSofor();
+  document.getElementById('pc1').innerHTML = buildCopyHTML('Müşteri Nüshası');
+  document.getElementById('pc2').innerHTML = buildCopyHTML('Şoför Nüshası');
+  window.print();
+}
+
+/* ══════════════════════════════════════════════
+   ŞOFÖR İMZASI (dokunmatik tuval)
+══════════════════════════════════════════════ */
+let signatureData = null;     // imza dataURL (image/png)
+let sigCtx = null;
+let sigDrawing = false;
+let sigHasInk = false;
+let sigBound = false;         // pointer olayları bir kez bağlandı mı
+
+/* Alt sağdaki imza kutusunu güncelle (isim + imza) */
+function renderSignBox() {
+  const name = (v('sofor_ad') || '').trim();
+  document.getElementById('signName').textContent = name || '—';
+  const img = document.getElementById('signImg');
+  const ph  = document.getElementById('signPlaceholder');
+  if (signatureData) {
+    img.src = signatureData;
+    img.style.display = 'block';
+    ph.style.display = 'none';
+  } else {
+    img.removeAttribute('src');
+    img.style.display = 'none';
+    ph.style.display = 'block';
+  }
+}
+
+function openSignature() {
+  document.getElementById('sigOverlay').classList.add('open');
+  setTimeout(initSigCanvas, 40);   // pencere açılınca tuvali boyutlandır
+}
+
+function initSigCanvas() {
+  const c = document.getElementById('sigCanvas');
+  const rect = c.getBoundingClientRect();
+  c.width  = Math.max(1, Math.round(rect.width));
+  c.height = Math.max(1, Math.round(rect.height));
+  sigCtx = c.getContext('2d');
+  sigCtx.lineWidth = 2.5;
+  sigCtx.lineCap = 'round';
+  sigCtx.lineJoin = 'round';
+  sigCtx.strokeStyle = '#0a1a4a';
+  sigHasInk = false;
+
+  if (!sigBound) {
+    sigBound = true;
+    const pos = e => {
+      const r = c.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+    c.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      sigDrawing = true;
+      const p = pos(e);
+      sigCtx.beginPath();
+      sigCtx.moveTo(p.x, p.y);
+      try { c.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    c.addEventListener('pointermove', e => {
+      if (!sigDrawing) return;
+      const p = pos(e);
+      sigCtx.lineTo(p.x, p.y);
+      sigCtx.stroke();
+      sigHasInk = true;
+    });
+    const end = () => { sigDrawing = false; };
+    c.addEventListener('pointerup', end);
+    c.addEventListener('pointercancel', end);
+    c.addEventListener('pointerleave', end);
+  }
+}
+
+function clearSignature() {
+  if (sigCtx) sigCtx.clearRect(0, 0, sigCtx.canvas.width, sigCtx.canvas.height);
+  sigHasInk = false;
+}
+
+function saveSignature() {
+  if (!sigHasInk) { showToast('⚠️ Önce imza atın'); return; }
+  signatureData = document.getElementById('sigCanvas').toDataURL('image/png');
+  renderSignBox();
+  document.getElementById('sigOverlay').classList.remove('open');
+  showToast('✅ İmza eklendi', true);
+}
+
+/* ══════════════════════════════════════════════
+   TEK NÜSHA A4 — İNDİR / PAYLAŞ
+══════════════════════════════════════════════ */
+function fileName(ext) {
+  let base = (v('sayin') || 'yuk-talebi').toString().trim();
+  base = base.replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, '_') || 'yuk-talebi';
+  const t = (v('tarih') || '').replace(/[^0-9]/g, '');
+  return 'Yuk-Talebi_' + base + (t ? '_' + t : '') + '.' + ext;
+}
+
+/* Tek nüsha, A4 dikey görünümlü fiş (kendi içinde stillenmiş) */
+function buildA4HTML() {
+  const data = getGidecegiData().filter(d => (d.addr || '').trim() !== '' || d.kg || d.palet);
+  const multi = isMultiGidecegi();
+  const fiyat = v('fiyati');
+  const fiyatDisplay = fiyat ? fiyat + ' + KDV' : '';
+  const qr = getQrDataUrl();
+  const row = (label, val) =>
+    `<tr><td style="width:34%;font-weight:700;color:#1a3a8c;padding:7px 8px;vertical-align:top;">${label}</td>
+         <td style="border-bottom:1px solid #cfd6e6;padding:7px 8px;">${val || ''}</td></tr>`;
+  const gidecegiHTML = data.length
+    ? data.map(d => {
+        const amt = (multi && (d.kg || d.palet))
+          ? `<span style="float:right;font-weight:700;color:#1a3a8c;">${d.kg || '0'} KG / ${d.palet || '0'} PALET</span>`
+          : '';
+        return `<div style="border-bottom:1px solid #cfd6e6;padding:4px 0;overflow:hidden;">${d.addr || '&nbsp;'}${amt}</div>`;
+      }).join('')
+    : '<div style="border-bottom:1px solid #cfd6e6;padding:4px 0;">&nbsp;</div>';
+
+  return `
+  <div style="font-family:Arial,Helvetica,sans-serif;color:#111;padding:34px 38px;box-sizing:border-box;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1a3a8c;padding-bottom:14px;">
+      <div style="flex-shrink:0;">${logoMarkup(false)}</div>
+      <div style="text-align:right;font-size:12px;color:#333;line-height:1.7;">
+        <div style="font-weight:700;font-size:14px;color:#1a3a8c;">☎ ${esc(activeProfile.phone || '')}</div>
+        ${esc(activeProfile.addr || '').replace(/\n/g, '<br>')}<br>
+        ✉ ${esc(activeProfile.email || '')}
+      </div>
+      ${qr ? `<div style="flex-shrink:0;text-align:center;margin-left:14px;"><img src="${qr}" style="width:84px;height:84px;display:block;"><div style="font-size:9px;color:#888;margin-top:2px;">Karekod</div></div>` : ''}
+    </div>
+
+    <div style="text-align:center;font-weight:900;font-size:26px;letter-spacing:5px;color:#1a3a8c;text-transform:uppercase;margin:18px 0 10px;">YÜK TALEBİ</div>
+    <div style="text-align:right;font-size:13px;color:#1a3a8c;font-weight:700;margin-bottom:8px;">Tarih: ${v('tarih')}</div>
+
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+      ${row('Sayın', v('sayin'))}
+      ${row('Cinsi', v('cinsi'))}
+      <tr><td style="width:34%;font-weight:700;color:#1a3a8c;padding:7px 8px;vertical-align:top;">Gideceği Yer</td>
+          <td style="padding:7px 8px;">${gidecegiHTML}</td></tr>
+      ${row(multi ? 'Toplam Miktarı' : 'Miktarı', `${v('miktar_kg') || '—'} KG&nbsp;&nbsp;/&nbsp;&nbsp;${v('miktar_palet') || '—'} PALET`)}
+      ${row('Fiyatı', fiyatDisplay)}
+      ${row('Ödeme Şekli', v('odeme'))}
+    </table>
+
+    <p style="font-size:11px;color:#555;line-height:1.6;background:#eef0f8;padding:10px 12px;border-radius:6px;margin:14px 0 10px;text-align:justify;">
+      Talebiniz üzere yukarıda özellikleri yazılı yükü nakletmek üzere aşağıda plaka ve diğer bilgileri yazılı kamyon emrinize tahsis edilmiştir.
+    </p>
+
+    <div style="font-weight:900;font-size:14px;color:#1a3a8c;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px;">Emtiayı Teslim Alan Şoför veya Kamyon Sahibinin</div>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+      ${row('Adı Soyadı', v('sofor_ad'))}
+      ${row('T.C. Kimlik No', v('sofor_tc'))}
+      ${row('Plaka No', v('plaka'))}
+      ${row('Vergi Dairesi No', v('vergi'))}
+      ${row('Referans Tel', v('ref_tel'))}
+      ${row('GSM', v('gsm'))}
+    </table>
+
+    <p style="font-size:10px;color:#555;line-height:1.55;background:#eef0f8;padding:9px 12px;border-radius:6px;margin:12px 0;text-align:justify;">
+      Yukarıda muhteviyatı yazılı yükü, belirtilen adrese eksiksiz ve kusursuz nakletmek üzere alınmış. Kabul etmiş bulunmaktayım. Yolda meydana gelebilecek zarar ve ziyandan olabilecek trafik cezalarından tamamen ben sorumlu olmak üzere ilgili yükü taşımayı taahhüt ediyorum. İhtilaf vukuunda Konya Mahkemelerinin selahiyetini kabul ederim.
+    </p>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:18px;">
+      <div style="text-align:center;font-size:12px;color:#555;">
+        <div style="font-weight:700;color:#111;font-size:14px;margin-bottom:4px;">${v('sofor_ad') || ''}</div>
+        ${signatureData ? `<img src="${signatureData}" style="height:60px;max-width:200px;object-fit:contain;display:block;margin:0 auto;">` : '<div style="height:60px;"></div>'}
+        <div style="border-bottom:1.5px solid #999;width:200px;margin:0 auto 4px;"></div>
+        Adı, Soyadı / İmza
+      </div>
+    </div>
+  </div>`;
+}
+
+/* A4 sayfasını canvas'a çiz */
+async function makeA4Canvas() {
+  const el = document.getElementById('a4Single');
+  el.innerHTML = buildA4HTML();
+  await new Promise(r => setTimeout(r, 60));   // görsellerin yerleşmesi için
+  return await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+}
+
+/* Canvas'tan A4 PDF (jsPDF) üret */
+function canvasToPdf(canvas) {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pw = 210, ph = 297;
+  let w = pw, h = canvas.height * pw / canvas.width;
+  if (h > ph) { h = ph; w = canvas.width * ph / canvas.height; }
+  const x = (pw - w) / 2;
+  pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', x, 0, w, h);
+  return pdf;
+}
+
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+async function downloadA4() {
+  if (typeof html2canvas === 'undefined' || !window.jspdf) {
+    showToast('⚠️ İndirme aracı yüklenemedi (internet?)'); return;
+  }
+  autoSaveSofor();
+  showToast('⏳ A4 PDF hazırlanıyor…');
+  try {
+    const canvas = await makeA4Canvas();
+    const pdf = canvasToPdf(canvas);
+    pdf.save(fileName('pdf'));
+    showToast('✅ A4 PDF indirildi', true);
+  } catch (err) {
+    console.error(err);
+    showToast('⚠️ İndirme başarısız oldu');
+  }
+}
+
+async function shareA4() {
+  if (typeof html2canvas === 'undefined' || !window.jspdf) {
+    showToast('⚠️ Paylaşım aracı yüklenemedi (internet?)'); return;
+  }
+  autoSaveSofor();
+  showToast('⏳ Paylaşım için hazırlanıyor…');
+  try {
+    const canvas = await makeA4Canvas();
+    const pdf = canvasToPdf(canvas);
+    const pdfBlob = pdf.output('blob');
+    const pdfFile = new File([pdfBlob], fileName('pdf'), { type: 'application/pdf' });
+
+    if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+      await navigator.share({ files: [pdfFile], title: 'Yük Talebi', text: 'Yük Talebi Fişi' });
+      return;
+    }
+    // PDF paylaşılamıyorsa görsel (PNG) olarak dene
+    await new Promise(res => canvas.toBlob(async (b) => {
+      const imgFile = new File([b], fileName('png'), { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [imgFile] })) {
+        try { await navigator.share({ files: [imgFile], title: 'Yük Talebi' }); }
+        catch (e) { /* kullanıcı iptal etti */ }
+      } else {
+        downloadBlob(b, fileName('png'));
+        showToast('ℹ️ Paylaşım desteklenmiyor — görsel indirildi');
+      }
+      res();
+    }, 'image/png'));
+  } catch (err) {
+    if (err && err.name === 'AbortError') return;  // kullanıcı paylaşımı iptal etti
+    console.error(err);
+    showToast('⚠️ Paylaşım başarısız oldu');
+  }
+}
+
+/* ══════════════════════════════════════════════
+   ŞOFÖR LİSTESİ MODALI (yönetim)
+══════════════════════════════════════════════ */
+let editIndex = -1;  // -1 = yeni kayıt
+let delIndex  = -1;
+
+function openSoforList() {
+  document.getElementById('soforListOverlay').classList.add('open');
+  renderTable();
+  setTimeout(() => document.getElementById('searchInput').focus(), 100);
+}
+
+function renderTable() {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const all = getSoforler();
+  const list = q
+    ? all.filter(s =>
+        (s.ad||'').toLowerCase().includes(q) ||
+        (s.tc||'').includes(q) ||
+        (s.plaka||'').toLowerCase().includes(q) ||
+        (s.tel||'').includes(q)
+      )
+    : all;
+
+  document.getElementById('searchCount').textContent =
+    all.length > 0 ? `${list.length} / ${all.length} şoför` : '';
+
+  const tbody = document.getElementById('tableBody');
+  const empty = document.getElementById('emptyState');
+
+  if (all.length === 0) {
+    tbody.innerHTML = '';
+    empty.style.display = 'block';
+    return;
+  }
+  empty.style.display = 'none';
+
+  if (list.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center;color:#bbb;padding:30px;font-style:italic;font-size:13px;">Arama sonucu bulunamadı</td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = list.map((s) => {
+    const realIdx = all.findIndex(x =>
+      x.ad === s.ad && x.tc === s.tc && x.plaka === s.plaka
+    );
+    return `<tr>
+      <td class="td-no">${realIdx + 1}</td>
+      <td><strong>${esc(s.ad)}</strong></td>
+      <td style="font-family:monospace;letter-spacing:.5px">${esc(s.tc)}</td>
+      <td><span style="background:var(--blue-pale);padding:2px 8px;border-radius:4px;font-weight:700;font-size:12px;color:var(--blue)">${esc(s.plaka)}</span></td>
+      <td>${esc(s.tel)}</td>
+      <td class="td-actions">
+        <button class="btn-edit" onclick="openEditModal(${realIdx})">✏️ Düzenle</button>
+        <button class="btn-del"  onclick="openDelModal(${realIdx})">🗑 Sil</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function esc(s) {
+  return (s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+/* Yeni Ekle */
+function openNewModal() {
+  editIndex = -1;
+  document.getElementById('editModalTitle').innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+    Yeni Şoför Ekle`;
+  ['m_ad','m_tc','m_plaka','m_tel'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('editOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('m_ad').focus(), 100);
+}
+
+/* Düzenle */
+function openEditModal(idx) {
+  editIndex = idx;
+  const s = getSoforler()[idx];
+  if (!s) return;
+  document.getElementById('editModalTitle').innerHTML = `
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+    Şoför Düzenle`;
+  document.getElementById('m_ad').value    = s.ad    || '';
+  document.getElementById('m_tc').value    = s.tc    || '';
+  document.getElementById('m_plaka').value = s.plaka || '';
+  document.getElementById('m_tel').value   = s.tel   || '';
+  document.getElementById('editOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('m_ad').focus(), 100);
+}
+
+/* Modal Kaydet */
+function saveModal() {
+  const ad    = document.getElementById('m_ad').value.trim();
+  const tc    = document.getElementById('m_tc').value.trim();
+  const plaka = document.getElementById('m_plaka').value.trim();
+  const tel   = document.getElementById('m_tel').value.trim();
+  if (!ad) {
+    document.getElementById('m_ad').focus();
+    showToast('⚠️ Ad Soyad boş bırakılamaz');
+    return;
+  }
+  const list = getSoforler();
+  if (editIndex >= 0) {
+    list[editIndex] = { ad, tc, plaka, tel };
+    showToast('✅ ' + ad + ' güncellendi', true);
+  } else {
+    list.push({ ad, tc, plaka, tel });
+    showToast('✅ ' + ad + ' eklendi', true);
+  }
+  setSoforler(list);
+  closeEditDelModals();
+  renderTable();
+}
+
+/* Sil */
+function openDelModal(idx) {
+  delIndex = idx;
+  const s = getSoforler()[idx];
+  document.getElementById('delName').textContent = s ? s.ad : '';
+  document.getElementById('delOverlay').classList.add('open');
+}
+function confirmDelete() {
+  const list = getSoforler();
+  const name = (list[delIndex] && list[delIndex].ad) || '';
+  list.splice(delIndex, 1);
+  setSoforler(list);
+  showToast('🗑 ' + name + ' silindi');
+  closeEditDelModals();
+  renderTable();
+}
+
+/* Kapat — yalnızca düzenle/sil alt pencereleri */
+function closeEditDelModals() {
+  document.getElementById('editOverlay').classList.remove('open');
+  document.getElementById('delOverlay').classList.remove('open');
+}
+
+/* Tüm açılır pencereleri kapat */
+function closeModals() {
+  ['settingsOverlay','soforListOverlay','editOverlay','delOverlay','adminOverlay','userEditOverlay','sigOverlay']
+    .forEach(id => { const e = document.getElementById(id); if (e) e.classList.remove('open'); });
+}
+
+/* Arka plana tıklayınca o pencereyi kapat */
+function overlayClick(e, id) {
+  if (e.target.id === id) document.getElementById(id).classList.remove('open');
+}
+
+/* Klavye kısayolları */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') closeModals();
+  if (e.key === 'Enter' && document.getElementById('editOverlay').classList.contains('open')) {
+    saveModal();
+  }
+});
+
+/* ── İlk yükleme ── */
+renderTable();
+renderSignBox();
+refreshGidecegiMode();
+initAuth();   /* giriş kontrolü + aktif kullanıcının üst bilgisini uygular */
+</script>
+</body>
+</html>
