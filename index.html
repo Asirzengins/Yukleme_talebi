@@ -4,6 +4,22 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Murat Koçak Lojistik – Yük Talebi</title>
+<script>
+  /* Hata yakalayıcı: bir şey çalışmazsa sessiz kalmasın, ekranda görünsün */
+  window.addEventListener('error', function (e) {
+    try {
+      var msg = (e && e.message) ? e.message : 'Bilinmeyen hata';
+      var box = document.getElementById('jsErrorBar');
+      if (!box) {
+        box = document.createElement('div');
+        box.id = 'jsErrorBar';
+        box.style.cssText = 'position:fixed;left:0;right:0;bottom:0;background:#c0392b;color:#fff;font:13px/1.4 sans-serif;padding:10px 14px;z-index:99999;text-align:center;';
+        if (document.body) document.body.appendChild(box);
+      }
+      box.textContent = '⚠️ Hata: ' + msg;
+    } catch (_) {}
+  });
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -871,7 +887,7 @@
   <div class="form-title">Yük Talebi</div>
   <div class="date-row">
     <span>Tarih:</span>
-    <input type="text" id="tarih" placeholder="GG / AA / YYYY">
+    <input type="text" id="tarih" placeholder="GG / AA / YYYY" inputmode="numeric" oninput="formatDateInput(this)">
   </div>
 
   <!-- SAYIN -->
@@ -902,12 +918,12 @@
     <span class="field-label">Miktarı</span>
     <div class="miktar-group">
       <div class="miktar-part">
-        <input type="text" id="miktar_kg" placeholder="0">
+        <input type="text" id="miktar_kg" placeholder="0" inputmode="numeric">
         <span class="miktar-unit">KG</span>
       </div>
       <span class="miktar-sep">/</span>
       <div class="miktar-part">
-        <input type="text" id="miktar_palet" placeholder="0">
+        <input type="text" id="miktar_palet" placeholder="0" inputmode="numeric">
         <span class="miktar-unit">PALET</span>
       </div>
     </div>
@@ -917,7 +933,7 @@
   <div class="field-row">
     <span class="field-label">Fiyatı</span>
     <div class="fiyat-group">
-      <input type="text" id="fiyati" placeholder="₺ tutar" oninput="kdvCheck()">
+      <input type="text" id="fiyati" placeholder="₺ tutar" inputmode="decimal" oninput="kdvCheck()">
       <span class="kdv-badge" id="kdvBadge">+ KDV</span>
     </div>
   </div>
@@ -961,7 +977,7 @@
 
   <div class="field-row">
     <span class="field-label">T.C. Kimlik No</span>
-    <input class="field-input" id="sofor_tc" type="text" maxlength="11">
+    <input class="field-input" id="sofor_tc" type="text" maxlength="11" inputmode="numeric">
   </div>
   <div class="field-row">
     <span class="field-label">Plaka No</span>
@@ -973,11 +989,11 @@
   </div>
   <div class="field-row">
     <span class="field-label">Referans Tel</span>
-    <input class="field-input" id="ref_tel" type="text">
+    <input class="field-input" id="ref_tel" type="text" inputmode="tel">
   </div>
   <div class="field-row">
     <span class="field-label">GSM</span>
-    <input class="field-input" id="gsm" type="text" placeholder="05__ ___ __ __">
+    <input class="field-input" id="gsm" type="text" placeholder="05__ ___ __ __" inputmode="tel">
   </div>
 
   <p class="info-text">
@@ -1105,7 +1121,7 @@
     </div>
     <div class="modal-field">
       <label>T.C. Kimlik No</label>
-      <input type="text" id="m_tc" placeholder="11 haneli TC" maxlength="11">
+      <input type="text" id="m_tc" placeholder="11 haneli TC" maxlength="11" inputmode="numeric">
     </div>
     <div class="modal-field">
       <label>Plaka No</label>
@@ -1113,7 +1129,7 @@
     </div>
     <div class="modal-field">
       <label>GSM</label>
-      <input type="text" id="m_tel" placeholder="05__ ___ __ __">
+      <input type="text" id="m_tel" placeholder="05__ ___ __ __" inputmode="tel">
     </div>
     <div class="modal-actions">
       <button class="btn-cancel" onclick="closeModals()">İptal</button>
@@ -1184,7 +1200,7 @@ const LOGO_KEY    = 'mk_logo';
 
 function getSoforler() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); }
-  catch { return []; }
+  catch (e) { return []; }
 }
 function setSoforler(list) {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
@@ -1416,16 +1432,20 @@ document.addEventListener('click', (e) => {
   if (!e.target.closest('.sofor-input-wrap')) closeDropdown();
 });
 
-/* ── QR Code ── */
+/* ── QR Code ── (kütüphane yüklenmezse sayfanın geri kalanı yine çalışsın) */
 const QR_DATA = "iletisim.html";
-new QRCode(document.getElementById("qrcode"), {
-  text: QR_DATA,
-  width: 72,
-  height: 72,
-  colorDark: "#1a3a8c",
-  colorLight: "#ffffff",
-  correctLevel: QRCode.CorrectLevel.M
-});
+try {
+  if (typeof QRCode !== 'undefined') {
+    new QRCode(document.getElementById("qrcode"), {
+      text: QR_DATA,
+      width: 72,
+      height: 72,
+      colorDark: "#1a3a8c",
+      colorLight: "#ffffff",
+      correctLevel: QRCode.CorrectLevel.M
+    });
+  }
+} catch (e) { /* QR oluşturulamadı, önemli değil */ }
 
 /* QR tooltip toggle */
 function toggleQR(e) {
@@ -1476,6 +1496,14 @@ function kdvCheck() {
 
 /* ── Helpers ── */
 function v(id) { return (document.getElementById(id)||{}).value||''; }
+/* Numerik klavyeyle tarih girişi: rakamları GG / AA / YYYY biçimine çevir */
+function formatDateInput(el) {
+  let d = (el.value || '').replace(/\D/g, '').slice(0, 8);
+  let out = d.slice(0, 2);
+  if (d.length >= 3) out += ' / ' + d.slice(2, 4);
+  if (d.length >= 5) out += ' / ' + d.slice(4, 8);
+  el.value = out;
+}
 function fillToday() {
   const n = new Date();
   document.getElementById('tarih').value =
@@ -1937,7 +1965,7 @@ function openDelModal(idx) {
 }
 function confirmDelete() {
   const list = getSoforler();
-  const name = list[delIndex]?.ad || '';
+  const name = (list[delIndex] && list[delIndex].ad) || '';
   list.splice(delIndex, 1);
   setSoforler(list);
   showToast('🗑 ' + name + ' silindi');
