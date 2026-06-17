@@ -791,6 +791,75 @@
   }
 
   /* ════════════════════════════════════
+     ÜST BAR (oturum)
+  ════════════════════════════════════ */
+  .topbar {
+    width: 100%;
+    max-width: 820px;
+    display: none;            /* giriş yapılınca JS açar */
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    background: var(--blue);
+    color: #fff;
+    padding: 9px 16px;
+    border-radius: 8px;
+    margin-bottom: 16px;
+    box-shadow: 0 3px 12px rgba(26,58,140,.25);
+  }
+  .topbar.show { display: flex; }
+  .topbar-brand { font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: .5px; }
+  .topbar-user { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
+  .topbar-btn {
+    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px;
+    background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.45);
+    border-radius: 6px; padding: 6px 12px; cursor: pointer;
+  }
+  .topbar-btn:hover { background: rgba(255,255,255,.28); }
+  .admin-only { display: none; }              /* yalnız yönetici görür */
+  body.is-admin .admin-only { display: inline-block; }
+  @media print { .topbar { display: none !important; } }
+
+  /* ════════════════════════════════════
+     GİRİŞ EKRANI
+  ════════════════════════════════════ */
+  .login-overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: linear-gradient(135deg,#1a3a8c,#0c1c4a);
+    z-index: 1000;
+    align-items: center; justify-content: center;
+    padding: 20px;
+  }
+  .login-overlay.show { display: flex; }
+  .login-card {
+    background: #fff; border-radius: 16px; padding: 34px 30px;
+    width: 100%; max-width: 380px; box-shadow: 0 20px 60px rgba(0,0,0,.35);
+    animation: modalIn .25s ease;
+  }
+  .login-logo { font-size: 42px; text-align: center; }
+  .login-title { font-family:'Rajdhani',sans-serif; text-align:center; color:var(--blue); font-size:22px; margin-top:6px; letter-spacing:1px; }
+  .login-sub { text-align:center; color:#888; font-size:13px; margin-bottom:18px; }
+  .login-error { color: var(--red); font-size: 13px; min-height: 18px; margin: 4px 2px; }
+  .login-hint { color:#aaa; font-size:11.5px; text-align:center; margin-top:14px; line-height:1.5; }
+
+  /* ════════════════════════════════════
+     YÖNETİCİ – KULLANICI DÜZENLE
+  ════════════════════════════════════ */
+  .ue-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
+  .ue-section {
+    font-family:'Rajdhani',sans-serif; font-weight:700; font-size:14px; color:var(--blue);
+    text-transform:uppercase; letter-spacing:.5px; border-bottom:2px solid var(--blue-pale);
+    padding-bottom:6px; margin-bottom:14px;
+  }
+  .ue-select, .ue-textarea {
+    width: 100%; border: none; border-bottom: 2px solid var(--line); outline: none;
+    font-family:'Source Serif 4',Georgia,serif; font-size:15px; padding:6px 4px; background:transparent; color:var(--ink);
+  }
+  .ue-textarea { border: 1.5px solid var(--line); border-radius:8px; padding:8px; resize:vertical; }
+  .ue-select:focus, .ue-textarea:focus { border-color: var(--blue-light); }
+
+  /* ════════════════════════════════════
      TELEFON / MOBİL GÖRÜNÜM
   ════════════════════════════════════ */
   @media (max-width: 640px) {
@@ -824,6 +893,9 @@
     .sign-pad { width: 100%; max-width: 320px; }
     .modal { padding: 20px 16px; }
     .modal-wide { max-width: 100%; }
+    .ue-grid { grid-template-columns: 1fr; gap: 8px; }
+    .topbar { flex-direction: column; align-items: stretch; gap: 8px; text-align: center; }
+    .topbar-user { justify-content: center; }
     .list-toolbar { flex-direction: column; align-items: stretch; }
     .btn-new { justify-content: center; }
     .table-card { overflow-x: auto; }
@@ -832,6 +904,16 @@
 </style>
 </head>
 <body>
+
+<!-- ── ÜST BAR (oturum) ── -->
+<div class="topbar" id="topbar">
+  <div class="topbar-brand">📦 Yük Talebi</div>
+  <div class="topbar-user">
+    <span id="topUserInfo"></span>
+    <button class="topbar-btn admin-only" id="btnAdminPanel" onclick="openAdmin()">🛠️ Yönetici Paneli</button>
+    <button class="topbar-btn" onclick="logout()">🚪 Çıkış</button>
+  </div>
+</div>
 
 <!-- ── CONTROLS ── -->
 <div class="controls">
@@ -857,37 +939,37 @@
         <div id="qrcode"></div>
         <div class="qr-tooltip" id="qrTooltip">
           <h4>İletişim Seçenekleri</h4>
-          <a class="qr-action" href="tel:+905334839269">
+          <a class="qr-action" id="qaCall" href="tel:+905334839269">
             <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z" fill="#1a3a8c"/></svg>
-            <div><strong>Ara</strong><span class="qr-label-small">0533 483 92 69</span></div>
+            <div><strong>Ara</strong><span class="qr-label-small" id="qaCallLbl">0533 483 92 69</span></div>
           </a>
-          <a class="qr-action" href="https://wa.me/905334839269" target="_blank">
+          <a class="qr-action" id="qaWa" href="https://wa.me/905334839269" target="_blank">
             <svg width="20" height="20" viewBox="0 0 24 24" fill="#25D366"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/></svg>
             <div><strong>WhatsApp</strong><span class="qr-label-small">Mesaj gönder</span></div>
           </a>
-          <a class="qr-action" href="https://maps.google.com/?q=Horozluhan+Mah+Şüra+Cad+Yeni+Kamyon+Garajı+No:1/A+Selçuklu+Konya" target="_blank">
+          <a class="qr-action" id="qaMaps" href="https://maps.google.com/?q=Horozluhan+Mah+Şüra+Cad+Yeni+Kamyon+Garajı+No:1/A+Selçuklu+Konya" target="_blank">
             <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" fill="#e74c3c"/></svg>
-            <div><strong>Konuma Git</strong><span class="qr-label-small">Selçuklu, Konya</span></div>
+            <div><strong>Konuma Git</strong><span class="qr-label-small">Haritada aç</span></div>
           </a>
-          <a class="qr-action" href="mailto:bilgi@muratkocaklojistik.com">
+          <a class="qr-action" id="qaMail" href="mailto:bilgi@muratkocaklojistik.com">
             <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="#1a3a8c"/></svg>
-            <div><strong>E-posta</strong><span class="qr-label-small">bilgi@muratkocaklojistik.com</span></div>
+            <div><strong>E-posta</strong><span class="qr-label-small" id="qaMailLbl">bilgi@muratkocaklojistik.com</span></div>
           </a>
         </div>
       </div>
-      <!-- İletişim -->
+      <!-- İletişim (kullanıcıya özel – yönetici panelinden doldurulur) -->
       <div class="contact-block">
         <div class="contact-row phone">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="#1a3a8c"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
-          0533 483 92 69
+          <span id="cbPhone">0533 483 92 69</span>
         </div>
         <div class="contact-row">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="#1a3a8c" style="margin-top:2px"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-          <span>Horozluhan Mah. Şüra Cad.<br>Yeni Kamyon Garajı İçi No:1/A<br>Selçuklu / KONYA</span>
+          <span id="cbAddr">Horozluhan Mah. Şüra Cad.<br>Yeni Kamyon Garajı İçi No:1/A<br>Selçuklu / KONYA</span>
         </div>
         <div class="contact-row">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="#1a3a8c"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-          bilgi@muratkocaklojistik.com
+          <span id="cbEmail">bilgi@muratkocaklojistik.com</span>
         </div>
       </div>
     </div>
@@ -1200,6 +1282,108 @@
 <!-- Tek nüsha A4 (ekran dışı – indir/paylaş çıktısı için) -->
 <div id="a4Single"></div>
 
+<!-- ══════════════════════════
+     GİRİŞ (LOGIN) EKRANI
+══════════════════════════ -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-card">
+    <div class="login-logo">📦</div>
+    <h2 class="login-title">Yük Talebi Girişi</h2>
+    <p class="login-sub">Devam etmek için giriş yapın</p>
+    <div class="modal-field">
+      <label>Kullanıcı Adı</label>
+      <input type="text" id="loginUser" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="modal-field">
+      <label>Şifre</label>
+      <input type="password" id="loginPass" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="login-error" id="loginError"></div>
+    <button class="btn-save" style="width:100%;margin-top:6px;" onclick="doLogin()">Giriş Yap</button>
+    <p class="login-hint" id="loginHint"></p>
+  </div>
+</div>
+
+<!-- ══════════════════════════
+     YÖNETİCİ PANELİ
+══════════════════════════ -->
+<div class="modal-overlay" id="adminOverlay" onclick="overlayClick(event,'adminOverlay')">
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <div class="modal-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
+        Yönetici Paneli – Kullanıcılar
+      </div>
+      <button class="modal-close" onclick="closeModals()" title="Kapat">×</button>
+    </div>
+
+    <div class="list-toolbar">
+      <div style="font-size:13px;color:#666;flex:1;">Her kullanıcıya kendi giriş bilgisi ve kendi <b>üst bilgi/QR</b> alanı verebilirsiniz.</div>
+      <button class="btn-new" onclick="adminNewUser()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        Yeni Kullanıcı
+      </button>
+    </div>
+
+    <div class="table-card">
+      <table>
+        <thead>
+          <tr><th class="td-no">#</th><th>Kullanıcı</th><th>Firma</th><th>Rol</th><th>Durum</th><th>Bitiş</th><th></th></tr>
+        </thead>
+        <tbody id="adminTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- KULLANICI DÜZENLE / EKLE MODALI -->
+<div class="modal-overlay" id="userEditOverlay" style="z-index:640" onclick="overlayClick(event,'userEditOverlay')">
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <div class="modal-title" id="userEditTitle">Kullanıcı</div>
+      <button class="modal-close" onclick="closeModals()" title="Kapat">×</button>
+    </div>
+
+    <div class="ue-grid">
+      <div>
+        <div class="ue-section">Giriş Bilgileri</div>
+        <div class="modal-field"><label>Kullanıcı Adı</label><input type="text" id="ue_user" autocomplete="off"></div>
+        <div class="modal-field"><label>Şifre</label><input type="text" id="ue_pass" autocomplete="off"></div>
+        <div class="modal-field"><label>Rol</label>
+          <select id="ue_role" class="ue-select"><option value="user">Kullanıcı</option><option value="admin">Yönetici</option></select>
+        </div>
+        <div class="modal-field"><label>Durum</label>
+          <select id="ue_active" class="ue-select"><option value="1">Aktif</option><option value="0">Pasif (giriş yapamaz)</option></select>
+        </div>
+        <div class="modal-field"><label>Abonelik Bitiş Tarihi (opsiyonel)</label><input type="date" id="ue_expiry"></div>
+      </div>
+      <div>
+        <div class="ue-section">Üst Bilgi (Antet) – bu kullanıcıya özel</div>
+        <div class="modal-field"><label>Firma / Başlık</label><input type="text" id="ue_company" placeholder="Örn: Murat Koçak Lojistik"></div>
+        <div class="modal-field"><label>Telefon</label><input type="text" id="ue_phone" inputmode="tel" placeholder="0533 000 00 00"></div>
+        <div class="modal-field"><label>Adres (çok satır olabilir)</label><textarea id="ue_addr" rows="3" class="ue-textarea" placeholder="Mah. Cad. No / İlçe / İl"></textarea></div>
+        <div class="modal-field"><label>E-posta</label><input type="text" id="ue_email" inputmode="email" placeholder="bilgi@firma.com"></div>
+        <div class="modal-field"><label>Harita Linki (opsiyonel)</label><input type="text" id="ue_maps" placeholder="https://maps.google.com/..."></div>
+        <div class="modal-field"><label>QR İçeriği (link/metin – karekod bunu açar)</label><input type="text" id="ue_qr" placeholder="https://firma.com veya tel:0533..."></div>
+        <div class="modal-field">
+          <label>Logo</label>
+          <div class="logo-preview-box" id="ue_logoPreview" style="min-height:70px;"></div>
+          <input type="file" id="ue_logoFile" accept="image/*" style="display:none" onchange="ueLogoFile(this)">
+          <div style="display:flex;gap:8px;margin-top:8px;">
+            <button class="btn-cancel" type="button" onclick="document.getElementById('ue_logoFile').click()">📁 Logo Seç</button>
+            <button class="btn-cancel" type="button" onclick="ueLogoClear()">↺ Logoyu Sil</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModals()">İptal</button>
+      <button class="btn-save" onclick="adminSaveUser()">💾 Kaydet</button>
+    </div>
+  </div>
+</div>
+
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -1256,63 +1440,286 @@ const DEFAULT_LOGO_SVG_PRINT = `
     <text x="72" y="40" font-family="Arial,sans-serif" font-weight="400" font-size="10" fill="#1a3a8c" letter-spacing="3">LOJİSTİK</text>
   </svg>`;
 
-function getLogo() { return localStorage.getItem(LOGO_KEY) || ''; }
+/* ══════════════════════════════════════════════
+   KULLANICI / OTURUM / PROFİL (üst bilgi kişiye özel)
+   localStorage:
+     mk_users   : tüm kullanıcılar (giriş + profil)
+     mk_session : aktif oturum (kullanıcı + token)
+   NOT: Form verileri (şoför/fiş) cihazda kalır; sadece giriş
+   bilgileri ve üst bilgi/QR bu yapıda tutulur.
+══════════════════════════════════════════════ */
+const USERS_KEY = 'mk_users';
+const SESSION_KEY = 'mk_session';
 
-/* Logoyu uygun yere (ekran / baskı) döndür */
+const DEFAULT_PROFILE = {
+  company: '',   /* boşsa varsayılan MK logosu görünür */
+  phone: '0533 483 92 69',
+  addr: 'Horozluhan Mah. Şüra Cad.\nYeni Kamyon Garajı İçi No:1/A\nSelçuklu / KONYA',
+  email: 'bilgi@muratkocaklojistik.com',
+  maps: 'https://maps.google.com/?q=Horozluhan+Mah+Şüra+Cad+Yeni+Kamyon+Garajı+No:1/A+Selçuklu+Konya',
+  qr: 'https://wa.me/905334839269',
+  logo: ''
+};
+
+let activeProfile = Object.assign({}, DEFAULT_PROFILE);
+let currentUser = null;
+
+function getUsers() { try { return JSON.parse(localStorage.getItem(USERS_KEY) || '[]'); } catch (e) { return []; } }
+function setUsers(list) { localStorage.setItem(USERS_KEY, JSON.stringify(list)); }
+function seedUsers() {
+  let list = getUsers();
+  if (!list.length) {
+    list = [{ user: 'admin', pass: 'admin', role: 'admin', active: 1, expiry: '', profile: Object.assign({}, DEFAULT_PROFILE) }];
+    setUsers(list);
+  }
+  return list;
+}
+function findUser(u) { return getUsers().find(x => (x.user || '').toLowerCase() === (u || '').toLowerCase()); }
+function isExpired(u) {
+  if (!u.expiry) return false;
+  try { return new Date(u.expiry + 'T23:59:59') < new Date(); } catch (e) { return false; }
+}
+function getSession() { try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { return null; } }
+function setSession(s) { if (s) localStorage.setItem(SESSION_KEY, JSON.stringify(s)); else localStorage.removeItem(SESSION_KEY); }
+
+function setText(id, t) { const e = document.getElementById(id); if (e) e.textContent = (t == null ? '' : t); }
+function setHref(id, h) { const e = document.getElementById(id); if (e) e.setAttribute('href', h); }
+function waNormalize(d) {
+  d = (d || '').replace(/\D/g, '');
+  if (!d) return '';
+  if (d[0] === '0') d = '90' + d.slice(1);
+  else if (d.slice(0, 2) !== '90' && d.length === 10) d = '90' + d;
+  return d;
+}
+
+/* Üst bilgiyi (logo + iletişim + QR) aktif kullanıcıya göre uygula */
+function applyProfile(p) {
+  activeProfile = Object.assign({}, DEFAULT_PROFILE, p || {});
+  const ph = activeProfile.phone || '';
+  setText('cbPhone', ph);
+  const addrEl = document.getElementById('cbAddr');
+  if (addrEl) addrEl.innerHTML = esc(activeProfile.addr || '').replace(/\n/g, '<br>');
+  setText('cbEmail', activeProfile.email || '');
+  const wa = waNormalize(ph);
+  setHref('qaCall', 'tel:' + (wa ? '+' + wa : ''));
+  setText('qaCallLbl', ph);
+  setHref('qaWa', 'https://wa.me/' + wa);
+  setHref('qaMaps', activeProfile.maps || ('https://maps.google.com/?q=' + encodeURIComponent((activeProfile.addr || '').replace(/\n/g, ' '))));
+  setHref('qaMail', 'mailto:' + (activeProfile.email || ''));
+  setText('qaMailLbl', activeProfile.email || '');
+  applyLogo();
+  renderQR(activeProfile.qr || ph || ' ');
+}
+
+/* Giriş */
+function doLogin() {
+  const u = document.getElementById('loginUser').value.trim();
+  const p = document.getElementById('loginPass').value;
+  const err = document.getElementById('loginError');
+  const rec = findUser(u);
+  if (!rec || rec.pass !== p) { err.textContent = 'Kullanıcı adı veya şifre hatalı.'; return; }
+  if (!Number(rec.active)) { err.textContent = 'Bu hesap pasif. Yönetici ile görüşün.'; return; }
+  if (isExpired(rec)) { err.textContent = 'Aboneliğiniz sona ermiş.'; return; }
+  err.textContent = '';
+  setSession({ user: rec.user, token: 't' + Date.now() + Math.floor(Math.random() * 1e6) });
+  document.getElementById('loginPass').value = '';
+  startSession(rec);
+}
+function startSession(rec) {
+  currentUser = rec;
+  document.getElementById('loginOverlay').classList.remove('show');
+  document.getElementById('topbar').classList.add('show');
+  document.body.classList.toggle('is-admin', rec.role === 'admin');
+  const comp = (rec.profile && rec.profile.company) ? rec.profile.company + ' · ' : '';
+  setText('topUserInfo', comp + rec.user + (rec.role === 'admin' ? ' (yönetici)' : ''));
+  applyProfile(rec.profile || DEFAULT_PROFILE);
+}
+function logout() {
+  setSession(null);
+  currentUser = null;
+  document.body.classList.remove('is-admin');
+  document.getElementById('topbar').classList.remove('show');
+  document.getElementById('loginOverlay').classList.add('show');
+}
+function initAuth() {
+  const list = seedUsers();
+  const onlyDefault = list.length === 1 && list[0].user === 'admin' && list[0].pass === 'admin';
+  setText('loginHint', onlyDefault ? 'İlk giriş için: kullanıcı "admin", şifre "admin" (sonra yönetici panelinden değiştirin).' : '');
+  const s = getSession();
+  const rec = s && findUser(s.user);
+  if (rec && Number(rec.active) && !isExpired(rec)) startSession(rec);
+  else { setSession(null); document.getElementById('loginOverlay').classList.add('show'); }
+}
+
+/* ── LOGO (aktif kullanıcının profilinden) ── */
+function getLogo() { return (activeProfile && activeProfile.logo) || ''; }
 function logoMarkup(forPrint) {
-  const custom = getLogo();
-  if (custom) {
-    return `<img src="${custom}" alt="Logo">`;
+  const p = activeProfile || {};
+  if (p.logo) return `<img src="${p.logo}" alt="Logo">`;
+  if (p.company && p.company.trim()) {
+    const size = forPrint ? '13pt' : '20px';
+    const mw = forPrint ? '48mm' : '230px';
+    return `<div style="font-family:'Rajdhani',Arial,sans-serif;font-weight:700;color:#1a3a8c;font-size:${size};line-height:1.15;max-width:${mw};">${esc(p.company)}</div>`;
   }
   return forPrint ? DEFAULT_LOGO_SVG_PRINT : DEFAULT_LOGO_SVG;
 }
-
-/* Ekran logosunu uygula + ayar önizlemesini güncelle */
 function applyLogo() {
-  document.getElementById('screenLogo').innerHTML = logoMarkup(false);
+  const el = document.getElementById('screenLogo');
+  if (el) el.innerHTML = logoMarkup(false);
   updateLogoPreview();
 }
-
 function updateLogoPreview() {
   const box = document.getElementById('logoPreview');
   if (!box) return;
-  const custom = getLogo();
-  box.innerHTML = custom
-    ? `<img src="${custom}" alt="Logo önizleme">`
-    : `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;">${DEFAULT_LOGO_SVG}<span class="ph-default-note">Varsayılan logo</span></div>`;
+  box.innerHTML = getLogo()
+    ? `<img src="${getLogo()}" alt="Logo önizleme">`
+    : `<div style="display:flex;flex-direction:column;align-items:center;gap:6px;">${logoMarkup(false)}<span class="ph-default-note">Mevcut görünüm (logo yüklenmedi)</span></div>`;
 }
-
-/* Dosya seçilince → dataURL'e çevir → sakla */
+/* Ayarlar → giriş yapan kullanıcı kendi logosunu değiştirir */
 function onLogoFile(input) {
   const file = input.files && input.files[0];
   if (!file) return;
   if (!file.type.startsWith('image/')) { showToast('⚠️ Lütfen bir resim dosyası seçin'); return; }
-  if (file.size > 1.5 * 1024 * 1024) {
-    showToast('⚠️ Logo 1.5 MB’dan küçük olmalı');
-  }
   const reader = new FileReader();
   reader.onload = e => {
     try {
-      localStorage.setItem(LOGO_KEY, e.target.result);
+      activeProfile.logo = e.target.result;
+      persistCurrentUser();
       applyLogo();
       showToast('✅ Logo güncellendi', true);
-    } catch (err) {
-      showToast('⚠️ Logo kaydedilemedi (dosya çok büyük olabilir)');
-    }
+    } catch (err) { showToast('⚠️ Logo kaydedilemedi (dosya çok büyük olabilir)'); }
   };
   reader.readAsDataURL(file);
   input.value = '';
 }
-
 function removeLogo() {
-  localStorage.removeItem(LOGO_KEY);
+  activeProfile.logo = '';
+  persistCurrentUser();
   applyLogo();
-  showToast('↺ Varsayılan logoya dönüldü');
+  showToast('↺ Logo kaldırıldı');
 }
-
+function persistCurrentUser() {
+  if (!currentUser) return;
+  currentUser.profile = activeProfile;
+  const list = getUsers();
+  const i = list.findIndex(x => (x.user || '').toLowerCase() === (currentUser.user || '').toLowerCase());
+  if (i >= 0) { list[i] = currentUser; setUsers(list); }
+}
 function openSettings() {
   updateLogoPreview();
   document.getElementById('settingsOverlay').classList.add('open');
+}
+
+/* ══════════════════════════════════════════════
+   YÖNETİCİ PANELİ – kullanıcı yönetimi
+══════════════════════════════════════════════ */
+let adminEditIdx = -1;
+let ueLogoData = '';
+
+function openAdmin() {
+  if (!currentUser || currentUser.role !== 'admin') { showToast('⚠️ Bu bölüm sadece yöneticiye açıktır'); return; }
+  adminRenderTable();
+  document.getElementById('adminOverlay').classList.add('open');
+}
+function adminRenderTable() {
+  const list = getUsers();
+  document.getElementById('adminTableBody').innerHTML = list.map((u, i) => `
+    <tr>
+      <td class="td-no">${i + 1}</td>
+      <td><strong>${esc(u.user)}</strong></td>
+      <td>${esc((u.profile && u.profile.company) || '')}</td>
+      <td>${u.role === 'admin' ? 'Yönetici' : 'Kullanıcı'}</td>
+      <td>${Number(u.active) ? '<span style="color:var(--green);font-weight:700;">Aktif</span>' : '<span style="color:var(--red);">Pasif</span>'}</td>
+      <td>${esc(u.expiry || '-')}</td>
+      <td class="td-actions">
+        <button class="btn-edit" onclick="adminEditUser(${i})">✏️ Düzenle</button>
+        <button class="btn-del" onclick="adminDeleteUser(${i})">🗑 Sil</button>
+      </td>
+    </tr>`).join('');
+}
+function fillUserForm(u) {
+  document.getElementById('ue_user').value = u ? u.user : '';
+  document.getElementById('ue_pass').value = u ? u.pass : '';
+  document.getElementById('ue_role').value = u ? u.role : 'user';
+  document.getElementById('ue_active').value = u ? String(Number(u.active) ? 1 : 0) : '1';
+  document.getElementById('ue_expiry').value = (u && u.expiry) ? u.expiry : '';
+  const p = (u && u.profile) || {};
+  document.getElementById('ue_company').value = p.company || '';
+  document.getElementById('ue_phone').value = p.phone || '';
+  document.getElementById('ue_addr').value = p.addr || '';
+  document.getElementById('ue_email').value = p.email || '';
+  document.getElementById('ue_maps').value = p.maps || '';
+  document.getElementById('ue_qr').value = p.qr || '';
+  ueLogoData = p.logo || '';
+  ueRenderLogoPreview();
+}
+function adminNewUser() {
+  adminEditIdx = -1;
+  document.getElementById('userEditTitle').textContent = 'Yeni Kullanıcı';
+  fillUserForm(null);
+  document.getElementById('userEditOverlay').classList.add('open');
+}
+function adminEditUser(i) {
+  adminEditIdx = i;
+  const u = getUsers()[i]; if (!u) return;
+  document.getElementById('userEditTitle').textContent = 'Kullanıcı: ' + u.user;
+  fillUserForm(u);
+  document.getElementById('userEditOverlay').classList.add('open');
+}
+function ueRenderLogoPreview() {
+  const box = document.getElementById('ue_logoPreview');
+  if (!box) return;
+  box.innerHTML = ueLogoData
+    ? `<img src="${ueLogoData}" style="max-height:60px;">`
+    : '<span class="ph-default-note">Logo yok — firma adı yazı olarak görünür</span>';
+}
+function ueLogoFile(input) {
+  const f = input.files && input.files[0]; if (!f) return;
+  if (!f.type.startsWith('image/')) { showToast('⚠️ Resim seçin'); return; }
+  const r = new FileReader();
+  r.onload = e => { ueLogoData = e.target.result; ueRenderLogoPreview(); };
+  r.readAsDataURL(f); input.value = '';
+}
+function ueLogoClear() { ueLogoData = ''; ueRenderLogoPreview(); }
+function adminSaveUser() {
+  const user = document.getElementById('ue_user').value.trim();
+  const pass = document.getElementById('ue_pass').value;
+  if (!user) { showToast('⚠️ Kullanıcı adı gerekli'); return; }
+  if (!pass) { showToast('⚠️ Şifre gerekli'); return; }
+  const list = getUsers();
+  const dup = list.findIndex((x, idx) => idx !== adminEditIdx && (x.user || '').toLowerCase() === user.toLowerCase());
+  if (dup >= 0) { showToast('⚠️ Bu kullanıcı adı zaten kullanımda'); return; }
+  const obj = {
+    user, pass,
+    role: document.getElementById('ue_role').value,
+    active: Number(document.getElementById('ue_active').value) ? 1 : 0,
+    expiry: document.getElementById('ue_expiry').value || '',
+    profile: {
+      company: document.getElementById('ue_company').value.trim(),
+      phone: document.getElementById('ue_phone').value.trim(),
+      addr: document.getElementById('ue_addr').value.trim(),
+      email: document.getElementById('ue_email').value.trim(),
+      maps: document.getElementById('ue_maps').value.trim(),
+      qr: document.getElementById('ue_qr').value.trim(),
+      logo: ueLogoData || ''
+    }
+  };
+  if (adminEditIdx >= 0) list[adminEditIdx] = obj; else list.push(obj);
+  setUsers(list);
+  if (currentUser && obj.user.toLowerCase() === currentUser.user.toLowerCase()) {
+    currentUser = obj;
+    document.body.classList.toggle('is-admin', obj.role === 'admin');
+    applyProfile(obj.profile);
+  }
+  document.getElementById('userEditOverlay').classList.remove('open');
+  adminRenderTable();
+  showToast('✅ Kaydedildi', true);
+}
+function adminDeleteUser(i) {
+  const list = getUsers(); const u = list[i]; if (!u) return;
+  if (currentUser && u.user.toLowerCase() === currentUser.user.toLowerCase()) { showToast('⚠️ Kendi hesabınızı silemezsiniz'); return; }
+  if (!confirm(u.user + ' kullanıcısı silinsin mi? Bu işlem geri alınamaz.')) return;
+  list.splice(i, 1); setUsers(list); adminRenderTable(); showToast('🗑 Kullanıcı silindi');
 }
 
 /* ══════════════════════════════════════════════
@@ -1446,20 +1853,22 @@ document.addEventListener('click', (e) => {
   if (!e.target.closest('.sofor-input-wrap')) closeDropdown();
 });
 
-/* ── QR Code ── (kütüphane yüklenmezse sayfanın geri kalanı yine çalışsın) */
-const QR_DATA = "iletisim.html";
-try {
-  if (typeof QRCode !== 'undefined') {
-    new QRCode(document.getElementById("qrcode"), {
-      text: QR_DATA,
+/* ── QR Code ── (içerik kullanıcı profilinden gelir; kütüphane yoksa sayfa yine çalışır) */
+function renderQR(text) {
+  try {
+    if (typeof QRCode === 'undefined') return;
+    const box = document.getElementById('qrcode');
+    box.innerHTML = '';
+    new QRCode(box, {
+      text: text || ' ',
       width: 72,
       height: 72,
       colorDark: "#1a3a8c",
       colorLight: "#ffffff",
       correctLevel: QRCode.CorrectLevel.M
     });
-  }
-} catch (e) { /* QR oluşturulamadı, önemli değil */ }
+  } catch (e) { /* QR oluşturulamadı, önemli değil */ }
+}
 
 /* QR tooltip toggle */
 function toggleQR(e) {
@@ -1644,10 +2053,9 @@ function buildCopyHTML(label) {
     <div class="ph-hdr">
       <div class="ph-logo-area">${logoMarkup(true)}</div>
       <div class="ph-contact">
-        <span class="ph-phone">&#9990; 0533 483 92 69</span><br>
-        &#9679; Horozluhan Mah. Şüra Cad.<br>
-        &nbsp;&nbsp; Yeni Kamyon Garajı İçi No:1/A Selçuklu/KONYA<br>
-        &#9993; bilgi@muratkocaklojistik.com
+        <span class="ph-phone">&#9990; ${esc(activeProfile.phone || '')}</span><br>
+        &#9679; ${esc(activeProfile.addr || '').replace(/\n/g, '<br>&nbsp;&nbsp; ')}<br>
+        &#9993; ${esc(activeProfile.email || '')}
       </div>
       ${qr ? `<img src="${qr}" style="width:16mm;height:16mm;margin-left:3mm;flex-shrink:0;">` : ''}
     </div>
@@ -1819,11 +2227,9 @@ function buildA4HTML() {
     <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1a3a8c;padding-bottom:14px;">
       <div style="flex-shrink:0;">${logoMarkup(false)}</div>
       <div style="text-align:right;font-size:12px;color:#333;line-height:1.7;">
-        <div style="font-weight:700;font-size:14px;color:#1a3a8c;">☎ 0533 483 92 69</div>
-        Horozluhan Mah. Şüra Cad.<br>
-        Yeni Kamyon Garajı İçi No:1/A<br>
-        Selçuklu / KONYA<br>
-        ✉ bilgi@muratkocaklojistik.com
+        <div style="font-weight:700;font-size:14px;color:#1a3a8c;">☎ ${esc(activeProfile.phone || '')}</div>
+        ${esc(activeProfile.addr || '').replace(/\n/g, '<br>')}<br>
+        ✉ ${esc(activeProfile.email || '')}
       </div>
       ${qr ? `<div style="flex-shrink:0;text-align:center;margin-left:14px;"><img src="${qr}" style="width:84px;height:84px;display:block;"><div style="font-size:9px;color:#888;margin-top:2px;">Karekod</div></div>` : ''}
     </div>
@@ -2090,8 +2496,8 @@ function closeEditDelModals() {
 
 /* Tüm açılır pencereleri kapat */
 function closeModals() {
-  ['settingsOverlay','soforListOverlay','editOverlay','delOverlay']
-    .forEach(id => document.getElementById(id).classList.remove('open'));
+  ['settingsOverlay','soforListOverlay','editOverlay','delOverlay','adminOverlay','userEditOverlay','sigOverlay']
+    .forEach(id => { const e = document.getElementById(id); if (e) e.classList.remove('open'); });
 }
 
 /* Arka plana tıklayınca o pencereyi kapat */
@@ -2108,10 +2514,10 @@ document.addEventListener('keydown', e => {
 });
 
 /* ── İlk yükleme ── */
-applyLogo();
 renderTable();
 renderSignBox();
 refreshGidecegiMode();
+initAuth();   /* giriş kontrolü + aktif kullanıcının üst bilgisini uygular */
 </script>
 </body>
 </html>
