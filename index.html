@@ -284,10 +284,10 @@
   }
   .kdv-badge.show { opacity: 1; }
   /* GİDECEĞİ YER – dinamik satırlar */
-  .gidecegi-wrap { flex: 1; display: flex; flex-direction: column; gap: 5px; }
-  .gidecegi-row { display: flex; align-items: center; gap: 6px; }
-  .gidecegi-row input {
-    flex: 1;
+  .gidecegi-wrap { flex: 1; display: flex; flex-direction: column; gap: 7px; }
+  .gidecegi-row { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .gidecegi-row .gd-addr {
+    flex: 1 1 150px;
     border: none;
     border-bottom: 1.5px solid var(--line);
     outline: none;
@@ -297,7 +297,14 @@
     color: var(--ink);
     background: transparent;
   }
-  .gidecegi-row input:focus { border-bottom-color: var(--blue-light); }
+  .gidecegi-row .gd-addr:focus { border-bottom-color: var(--blue-light); }
+  /* satır başına KG / PALET (yalnız çok adresli modda görünür) */
+  .gd-amt { display: none; gap: 10px; align-items: flex-end; flex: 0 0 auto; }
+  .gidecegi-wrap.multi .gd-amt { display: flex; }
+  .gd-part { flex: 0 0 auto; }
+  .gd-part input { width: 64px; text-align: right; }
+  /* otomatik TOPLAM (salt-okunur) alan vurgusu */
+  .miktar-part input.total-field { background: var(--blue-pale); font-weight: 700; color: var(--blue); border-radius: 4px; cursor: default; }
   .btn-add-row, .btn-rem-row {
     background: none;
     border: none;
@@ -809,6 +816,9 @@
     .field-label { min-width: 0; padding-bottom: 0; font-size: 12.5px; }
     .field-input, .gidecegi-row input { font-size: 16px; } /* iOS zoom engelle */
     .miktar-part input, .fiyat-group input, .date-row input { font-size: 16px; }
+    /* çok adresli modda KG/PALET adresin altına insin */
+    .gidecegi-wrap.multi .gd-amt { width: 100%; justify-content: flex-start; }
+    .gd-part input { width: 72px; }
     .sofor-input-wrap { width: 100%; }
     .sign-row { justify-content: center; }
     .sign-pad { width: 100%; max-width: 320px; }
@@ -907,15 +917,19 @@
     <span class="field-label" style="padding-top:6px;">Gideceği Yer</span>
     <div class="gidecegi-wrap" id="gidecegiWrap">
       <div class="gidecegi-row">
-        <input type="text" placeholder="Varış adresi">
+        <input type="text" class="gd-addr" placeholder="Varış adresi">
+        <div class="gd-amt">
+          <div class="miktar-part gd-part"><input type="text" class="gd-kg" inputmode="numeric" placeholder="0" oninput="recomputeTotals()"><span class="miktar-unit">KG</span></div>
+          <div class="miktar-part gd-part"><input type="text" class="gd-palet" inputmode="numeric" placeholder="0" oninput="recomputeTotals()"><span class="miktar-unit">PALET</span></div>
+        </div>
         <button class="btn-add-row" onclick="addGidecegi()" title="Satır ekle">＋</button>
       </div>
     </div>
   </div>
 
-  <!-- MİKTARI – KG + PALET -->
+  <!-- MİKTARI – KG + PALET (birden fazla adreste otomatik TOPLAM olur) -->
   <div class="field-row">
-    <span class="field-label">Miktarı</span>
+    <span class="field-label" id="miktarLabel">Miktarı</span>
     <div class="miktar-group">
       <div class="miktar-part">
         <input type="text" id="miktar_kg" placeholder="0" inputmode="numeric">
@@ -1458,19 +1472,28 @@ document.addEventListener('click', () => {
 document.getElementById('qrTooltip').addEventListener('click', e => e.stopPropagation());
 
 /* ── Gideceği Yer rows ── */
+/* Bir satırın iç markup'ı (adres + satıra özel KG/PALET). Butonlar ayrı eklenir. */
+function gidecegiInner() {
+  return `<input type="text" class="gd-addr" placeholder="Varış adresi">
+    <div class="gd-amt">
+      <div class="miktar-part gd-part"><input type="text" class="gd-kg" inputmode="numeric" placeholder="0" oninput="recomputeTotals()"><span class="miktar-unit">KG</span></div>
+      <div class="miktar-part gd-part"><input type="text" class="gd-palet" inputmode="numeric" placeholder="0" oninput="recomputeTotals()"><span class="miktar-unit">PALET</span></div>
+    </div>`;
+}
 function addGidecegi() {
   const wrap = document.getElementById('gidecegiWrap');
   const row = document.createElement('div');
   row.className = 'gidecegi-row';
-  row.innerHTML = `<input type="text" placeholder="Varış adresi">
-    <button class="btn-rem-row" onclick="remGidecegi(this)" title="Satırı sil">✕</button>`;
-  updateAddBtn();
+  row.innerHTML = gidecegiInner() +
+    `<button class="btn-rem-row" onclick="remGidecegi(this)" title="Satırı sil">✕</button>`;
   wrap.appendChild(row);
   updateAddBtn();
+  refreshGidecegiMode();
 }
 function remGidecegi(btn) {
   btn.parentElement.remove();
   updateAddBtn();
+  refreshGidecegiMode();
 }
 function updateAddBtn() {
   const wrap = document.getElementById('gidecegiWrap');
@@ -1485,6 +1508,60 @@ function updateAddBtn() {
   addBtn.textContent = '＋';
   addBtn.onclick = addGidecegi;
   last.appendChild(addBtn);
+}
+
+/* Sayı ayrıştırma (virgül/nokta toleranslı) */
+function gdNum(x) {
+  const n = parseFloat(String(x || '').replace(',', '.').replace(/[^\d.]/g, ''));
+  return isNaN(n) ? 0 : n;
+}
+function gdFmt(n) {
+  if (!n) return '';
+  return Number.isInteger(n) ? String(n) : String(parseFloat(n.toFixed(2)));
+}
+
+/* Çok adresli mod aktif mi? (1'den fazla satır) -> satır başına KG/PALET açılır,
+   "Miktarı" alanı otomatik TOPLAM olur ve salt-okunur hale gelir. */
+function refreshGidecegiMode() {
+  const wrap = document.getElementById('gidecegiWrap');
+  const rows = wrap.querySelectorAll('.gidecegi-row');
+  const multi = rows.length > 1;
+  wrap.classList.toggle('multi', multi);
+
+  const kg = document.getElementById('miktar_kg');
+  const pal = document.getElementById('miktar_palet');
+  const label = document.getElementById('miktarLabel');
+
+  if (multi) {
+    kg.readOnly = true; pal.readOnly = true;
+    kg.classList.add('total-field'); pal.classList.add('total-field');
+    if (label) label.textContent = 'Toplam Miktarı';
+    recomputeTotals();
+  } else {
+    kg.readOnly = false; pal.readOnly = false;
+    kg.classList.remove('total-field'); pal.classList.remove('total-field');
+    if (label) label.textContent = 'Miktarı';
+  }
+}
+
+/* Satır başına KG/PALET değerlerini toplayıp "Miktarı" alanına yaz */
+function recomputeTotals() {
+  const wrap = document.getElementById('gidecegiWrap');
+  if (!wrap.classList.contains('multi')) return;
+  let kg = 0, pal = 0;
+  wrap.querySelectorAll('.gd-kg').forEach(i => kg += gdNum(i.value));
+  wrap.querySelectorAll('.gd-palet').forEach(i => pal += gdNum(i.value));
+  document.getElementById('miktar_kg').value = gdFmt(kg);
+  document.getElementById('miktar_palet').value = gdFmt(pal);
+}
+
+/* Her satırın verisi: { addr, kg, palet } */
+function getGidecegiData() {
+  return Array.from(document.querySelectorAll('#gidecegiWrap .gidecegi-row')).map(r => ({
+    addr:  ((r.querySelector('.gd-addr')  || {}).value || ''),
+    kg:    ((r.querySelector('.gd-kg')    || {}).value || ''),
+    palet: ((r.querySelector('.gd-palet') || {}).value || '')
+  }));
 }
 
 /* ── KDV badge ── */
@@ -1519,26 +1596,49 @@ function clearForm() {
   document.getElementById('kdvBadge').classList.remove('show');
   const wrap = document.getElementById('gidecegiWrap');
   wrap.innerHTML = `<div class="gidecegi-row">
-    <input type="text" placeholder="Varış adresi">
+    ${gidecegiInner()}
     <button class="btn-add-row" onclick="addGidecegi()" title="Satır ekle">＋</button>
   </div>`;
+  refreshGidecegiMode();
   signatureData = null;
   renderSignBox();
 }
 
-/* ── Gideceği values ── */
+/* ── Gideceği values (yalnız adresler) ── */
 function getGidecegiValues() {
-  return Array.from(document.querySelectorAll('#gidecegiWrap input')).map(i => i.value);
+  return Array.from(document.querySelectorAll('#gidecegiWrap .gd-addr')).map(i => i.value);
+}
+
+/* QR kodu görselini (dataURL) al — PDF/yazdırma çıktısına gömmek için */
+function getQrDataUrl() {
+  const box = document.getElementById('qrcode');
+  if (!box) return '';
+  const cv = box.querySelector('canvas');
+  if (cv) { try { return cv.toDataURL('image/png'); } catch (e) {} }
+  const im = box.querySelector('img');
+  if (im && im.src) return im.src;
+  return '';
+}
+
+/* Çoklu adres modunda mı? */
+function isMultiGidecegi() {
+  const w = document.getElementById('gidecegiWrap');
+  return !!(w && w.classList.contains('multi'));
 }
 
 /* ── Build print copy HTML ── */
 function buildCopyHTML(label) {
-  const gidecegi = getGidecegiValues();
+  const data = getGidecegiData();
+  const multi = isMultiGidecegi();
   const fiyat = v('fiyati');
   const fiyatDisplay = fiyat ? fiyat + ' + KDV' : '';
-  const gidecegiRowsHTML = gidecegi.map(g =>
-    `<div class="pf-gidecegi-row">${g}</div>`
-  ).join('');
+  const gidecegiRowsHTML = data.map(d => {
+    const amt = (multi && (d.kg || d.palet))
+      ? ` <b style="color:#1a3a8c;">— ${d.kg || '0'} KG / ${d.palet || '0'} PALET</b>`
+      : '';
+    return `<div class="pf-gidecegi-row">${d.addr || ''}${amt}</div>`;
+  }).join('');
+  const qr = getQrDataUrl();
   return `
     <div class="p-copy-label">${label}</div>
     <div class="ph-hdr">
@@ -1549,6 +1649,7 @@ function buildCopyHTML(label) {
         &nbsp;&nbsp; Yeni Kamyon Garajı İçi No:1/A Selçuklu/KONYA<br>
         &#9993; bilgi@muratkocaklojistik.com
       </div>
+      ${qr ? `<img src="${qr}" style="width:16mm;height:16mm;margin-left:3mm;flex-shrink:0;">` : ''}
     </div>
     <div class="ph-title">Yük Talebi</div>
     <div class="ph-date">Tarih: ${v('tarih')}</div>
@@ -1559,7 +1660,7 @@ function buildCopyHTML(label) {
       <div class="pf-gidecegi-rows">${gidecegiRowsHTML}</div>
     </div>
     <div class="pf-miktar">
-      <label>Miktarı</label>
+      <label>${multi ? 'Toplam Miktarı' : 'Miktarı'}</label>
       <div class="pf-miktar-vals">
         <div class="pf-miktar-part"><span>${v('miktar_kg')}</span><span class="pf-miktar-unit">KG</span></div>
         <div class="pf-miktar-part"><span>${v('miktar_palet')}</span><span class="pf-miktar-unit">PALET</span></div>
@@ -1696,14 +1797,21 @@ function fileName(ext) {
 
 /* Tek nüsha, A4 dikey görünümlü fiş (kendi içinde stillenmiş) */
 function buildA4HTML() {
-  const gidecegi = getGidecegiValues().filter(x => (x || '').trim() !== '');
+  const data = getGidecegiData().filter(d => (d.addr || '').trim() !== '' || d.kg || d.palet);
+  const multi = isMultiGidecegi();
   const fiyat = v('fiyati');
   const fiyatDisplay = fiyat ? fiyat + ' + KDV' : '';
+  const qr = getQrDataUrl();
   const row = (label, val) =>
     `<tr><td style="width:34%;font-weight:700;color:#1a3a8c;padding:7px 8px;vertical-align:top;">${label}</td>
          <td style="border-bottom:1px solid #cfd6e6;padding:7px 8px;">${val || ''}</td></tr>`;
-  const gidecegiHTML = gidecegi.length
-    ? gidecegi.map(g => `<div style="border-bottom:1px solid #cfd6e6;padding:4px 0;">${g}</div>`).join('')
+  const gidecegiHTML = data.length
+    ? data.map(d => {
+        const amt = (multi && (d.kg || d.palet))
+          ? `<span style="float:right;font-weight:700;color:#1a3a8c;">${d.kg || '0'} KG / ${d.palet || '0'} PALET</span>`
+          : '';
+        return `<div style="border-bottom:1px solid #cfd6e6;padding:4px 0;overflow:hidden;">${d.addr || '&nbsp;'}${amt}</div>`;
+      }).join('')
     : '<div style="border-bottom:1px solid #cfd6e6;padding:4px 0;">&nbsp;</div>';
 
   return `
@@ -1717,6 +1825,7 @@ function buildA4HTML() {
         Selçuklu / KONYA<br>
         ✉ bilgi@muratkocaklojistik.com
       </div>
+      ${qr ? `<div style="flex-shrink:0;text-align:center;margin-left:14px;"><img src="${qr}" style="width:84px;height:84px;display:block;"><div style="font-size:9px;color:#888;margin-top:2px;">Karekod</div></div>` : ''}
     </div>
 
     <div style="text-align:center;font-weight:900;font-size:26px;letter-spacing:5px;color:#1a3a8c;text-transform:uppercase;margin:18px 0 10px;">YÜK TALEBİ</div>
@@ -1727,7 +1836,7 @@ function buildA4HTML() {
       ${row('Cinsi', v('cinsi'))}
       <tr><td style="width:34%;font-weight:700;color:#1a3a8c;padding:7px 8px;vertical-align:top;">Gideceği Yer</td>
           <td style="padding:7px 8px;">${gidecegiHTML}</td></tr>
-      ${row('Miktarı', `${v('miktar_kg') || '—'} KG&nbsp;&nbsp;/&nbsp;&nbsp;${v('miktar_palet') || '—'} PALET`)}
+      ${row(multi ? 'Toplam Miktarı' : 'Miktarı', `${v('miktar_kg') || '—'} KG&nbsp;&nbsp;/&nbsp;&nbsp;${v('miktar_palet') || '—'} PALET`)}
       ${row('Fiyatı', fiyatDisplay)}
       ${row('Ödeme Şekli', v('odeme'))}
     </table>
@@ -2002,6 +2111,7 @@ document.addEventListener('keydown', e => {
 applyLogo();
 renderTable();
 renderSignBox();
+refreshGidecegiMode();
 </script>
 </body>
 </html>
