@@ -1,5 +1,5 @@
 /* Yük Talebi – Service Worker (çevrimdışı / masaüstü uygulama desteği) */
-const CACHE = 'yuktalebi-v1';
+const CACHE = 'yuktalebi-v2';
 const ASSETS = [
   './',
   './index.html',

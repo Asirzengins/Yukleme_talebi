@@ -1,7 +1,7 @@
 {
-  "name": "Yük Talebi",
-  "short_name": "YükTalebi",
-  "description": "Yük talebi / yükleme fişi oluşturma programı",
+  "name": "Yükleme Talebi",
+  "short_name": "YüklemeTalebi",
+  "description": "Yükleme talebi oluşturma programı",
   "start_url": ".",
   "scope": ".",
   "display": "standalone",

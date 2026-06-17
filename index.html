@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Murat Koçak Lojistik – Yük Talebi</title>
+<title>Yükleme Talebi</title>
 <!-- ── Masaüstü / kurulabilir uygulama (PWA) ── -->
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#1a3a8c">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="icon.svg">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="Yük Talebi">
+<meta name="apple-mobile-web-app-title" content="Yükleme Talebi">
 <script>
   /* "Uygulamayı Kur" olayını erken yakala (buton sonradan açılır) */
   window.__deferredInstall = null;
@@ -58,21 +58,25 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap');
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
   :root {
-    --blue: #1a3a8c;
+    --blue: #1a3a8c;            /* ana renk (accent) */
     --blue-light: #2a52b8;
     --blue-pale: #e8edf8;
-    --ink: #111;
-    --line: #b0bcd8;
-    --bg: #f0f3fa;
+    --ink: #1b2333;            /* yazı rengi */
+    --line: #ccd4e6;
+    --bg: #eef2f9;             /* sayfa arka planı */
+    --card: #ffffff;          /* kart / form arka planı */
+    --muted: #7b86a0;
     --red: #c0392b;
     --green: #1a8c4e;
+    --font: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    --radius: 14px;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
   body {
     background: var(--bg);
-    font-family: 'Source Serif 4', Georgia, serif;
+    font-family: var(--font);
     color: var(--ink);
     min-height: 100vh;
     display: flex;
@@ -89,71 +93,115 @@
     justify-content: center;
   }
   .btn {
-    font-family: 'Rajdhani', sans-serif;
-    font-weight: 700;
-    font-size: 15px;
-    letter-spacing: .5px;
-    padding: 10px 28px;
+    font-family: var(--font);
+    font-weight: 600;
+    font-size: 14.5px;
+    letter-spacing: .2px;
+    padding: 11px 24px;
     border: none;
-    border-radius: 6px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: transform .1s, box-shadow .1s;
+    transition: transform .1s, box-shadow .1s, filter .1s;
   }
   .btn:active { transform: scale(.97); }
-  .btn-primary { background: var(--blue); color: #fff; box-shadow: 0 3px 12px rgba(26,58,140,.35); }
-  .btn-secondary { background: #fff; color: var(--blue); border: 2px solid var(--blue); }
-  .btn-clear { background: #fff; color: #c0392b; border: 2px solid #c0392b; }
+  .btn-primary { background: var(--blue); color: #fff; box-shadow: 0 4px 14px rgba(26,58,140,.30); }
+  .btn-primary:hover { filter: brightness(1.06); }
+  .btn-secondary { background: var(--card); color: var(--blue); border: 1.5px solid var(--blue); }
+  .btn-secondary:hover { background: var(--blue-pale); }
+  .btn-clear { background: var(--card); color: var(--red); border: 1.5px solid var(--red); }
+  /* Çıktı menüsü (Yazdır / İndir / Paylaş tek butonda) */
+  .dropdown { position: relative; display: inline-block; }
+  .dropdown-menu {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    background: var(--card);
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    box-shadow: 0 12px 34px rgba(20,40,90,.18);
+    padding: 6px;
+    z-index: 300;
+    min-width: 250px;
+  }
+  .dropdown-menu.open { display: block; }
+  .dropdown-menu button {
+    display: block; width: 100%; text-align: left;
+    background: none; border: none; cursor: pointer;
+    font-family: var(--font); font-size: 14px; color: var(--ink);
+    padding: 11px 14px; border-radius: 8px;
+  }
+  .dropdown-menu button small { color: var(--muted); font-size: 11.5px; }
+  .dropdown-menu button:hover { background: var(--blue-pale); }
   /* ── SCREEN FORM CARD ── */
   .screen-form {
-    background: #fff;
-    border-radius: 12px;
-    box-shadow: 0 8px 40px rgba(26,58,140,.13);
-    padding: 36px 44px;
+    background: var(--card);
+    border-radius: var(--radius);
+    box-shadow: 0 10px 40px rgba(20,40,90,.10);
+    border: 1px solid rgba(20,40,90,.05);
+    padding: 34px 40px;
     width: 100%;
-    max-width: 760px;
+    max-width: 780px;
   }
-  /* HEADER */
+  /* HEADER – temiz, profesyonel */
   .form-header {
     display: flex;
     justify-content: space-between;
-    align-items: flex-start;
-    margin-bottom: 20px;
-    padding-bottom: 16px;
-    border-bottom: 2px solid var(--blue);
-    gap: 16px;
+    align-items: center;
+    margin-bottom: 22px;
+    padding-bottom: 18px;
+    border-bottom: 3px solid var(--blue);
+    gap: 20px;
   }
-  .logo-svg-wrap { display:flex; align-items:center; gap:12px; flex-shrink:0; }
-  .logo-svg-wrap img { max-height:72px; max-width:220px; object-fit:contain; display:block; }
+  .logo-svg-wrap { display:flex; align-items:center; gap:12px; flex-shrink:0; min-height:48px; }
+  .logo-svg-wrap img { max-height:78px; max-width:240px; object-fit:contain; display:block; }
+  .logo-placeholder {
+    font-family: var(--font); font-weight: 800; font-size: 22px; color: var(--blue);
+    letter-spacing: -.3px; line-height: 1.1; max-width: 240px;
+  }
+  /* QR + contact wrapper */
+  .header-right {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
   /* CONTACT */
   .contact-block {
     display: flex;
     flex-direction: column;
-    gap: 3px;
-    font-size: 11.5px;
-    color: #333;
+    gap: 6px;
+    font-size: 12.5px;
+    color: var(--muted);
     text-align: right;
   }
   .contact-block .contact-row {
     display: flex;
     align-items: flex-start;
     justify-content: flex-end;
-    gap: 5px;
+    gap: 7px;
+    line-height: 1.35;
   }
-  .contact-block .contact-row svg { flex-shrink:0; margin-top:1px; }
-  .contact-block .phone { font-weight: 700; font-size: 13.5px; color: var(--blue); }
-  /* QR + contact wrapper */
-  .header-right {
-    display: flex;
-    align-items: flex-start;
-    gap: 14px;
-  }
+  .contact-block .contact-row svg { flex-shrink:0; margin-top:2px; color: var(--blue); opacity:.8; }
+  .contact-block .phone { font-weight: 700; font-size: 15px; color: var(--ink); }
+  .contact-block .phone svg { opacity: 1; }
   .qr-wrap {
     cursor: pointer;
     position: relative;
+    padding: 6px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 2px 8px rgba(20,40,90,.06);
+    line-height: 0;
+    flex-shrink: 0;
   }
   .qr-wrap #qrcode img, .qr-wrap #qrcode canvas {
     width: 72px !important;
     height: 72px !important;
+  }
+  .qr-wrap #qrcode:empty::after {
+    content: 'QR'; display:flex; align-items:center; justify-content:center;
+    width:72px; height:72px; color:var(--muted); font-size:12px; font-weight:600;
   }
   .qr-tooltip {
     display: none;
@@ -170,7 +218,7 @@
   }
   .qr-tooltip.open { display:block; }
   .qr-tooltip h4 {
-    font-family: 'Rajdhani', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     color: var(--blue);
     margin-bottom: 8px;
@@ -195,13 +243,13 @@
   /* TITLE */
   .form-title {
     text-align: center;
-    font-family: 'Rajdhani', sans-serif;
-    font-weight: 700;
-    font-size: 26px;
-    letter-spacing: 4px;
+    font-family: var(--font);
+    font-weight: 800;
+    font-size: 25px;
+    letter-spacing: 3px;
     color: var(--blue);
     text-transform: uppercase;
-    margin-bottom: 16px;
+    margin-bottom: 18px;
   }
   .date-row {
     display: flex;
@@ -216,7 +264,7 @@
   .date-row input {
     border: none;
     border-bottom: 1.5px solid var(--line);
-    font-family: 'Source Serif 4', Georgia, serif;
+    font-family: var(--font);
     font-size: 13px;
     padding: 2px 6px;
     width: 140px;
@@ -243,7 +291,7 @@
     border: none;
     border-bottom: 1.5px solid var(--line);
     outline: none;
-    font-family: 'Source Serif 4', Georgia, serif;
+    font-family: var(--font);
     font-size: 14px;
     padding: 4px 6px;
     color: var(--ink);
@@ -270,7 +318,7 @@
   .miktar-part input {
     border: none;
     outline: none;
-    font-family: 'Source Serif 4', Georgia, serif;
+    font-family: var(--font);
     font-size: 14px;
     padding: 2px 4px;
     color: var(--ink);
@@ -299,7 +347,7 @@
   .fiyat-group input {
     border: none;
     outline: none;
-    font-family: 'Source Serif 4', Georgia, serif;
+    font-family: var(--font);
     font-size: 14px;
     padding: 2px 4px;
     color: var(--ink);
@@ -325,7 +373,7 @@
     border: none;
     border-bottom: 1.5px solid var(--line);
     outline: none;
-    font-family: 'Source Serif 4', Georgia, serif;
+    font-family: var(--font);
     font-size: 14px;
     padding: 4px 6px;
     color: var(--ink);
@@ -364,7 +412,7 @@
     border-radius: 6px;
   }
   .section-heading {
-    font-family: 'Rajdhani', sans-serif;
+    font-family: var(--font);
     font-weight: 700;
     font-size: 14.5px;
     color: var(--blue);
@@ -406,7 +454,7 @@
   #sigCanvas { width: 100%; height: 100%; touch-action: none; cursor: crosshair; display: block; }
   .sig-hint { font-size: 12px; color: #888; text-align: center; margin: 10px 0 0; }
   .btn-clear-sig {
-    font-family: 'Rajdhani', sans-serif;
+    font-family: var(--font);
     font-weight: 700;
     font-size: 14px;
     padding: 10px 20px;
@@ -583,7 +631,7 @@
     gap: 12px;
   }
   .modal-title {
-    font-family: 'Rajdhani', sans-serif;
+    font-family: var(--font);
     font-weight: 700;
     font-size: 20px;
     letter-spacing: 1px;
@@ -619,7 +667,7 @@
     border: none;
     border-bottom: 2px solid var(--line);
     outline: none;
-    font-family: 'Source Serif 4', Georgia, serif;
+    font-family: var(--font);
     font-size: 15px;
     padding: 6px 4px;
     color: var(--ink);
@@ -635,7 +683,7 @@
     flex-wrap: wrap;
   }
   .btn-save {
-    font-family: 'Rajdhani', sans-serif;
+    font-family: var(--font);
     font-weight: 700;
     font-size: 14px;
     padding: 10px 28px;
@@ -648,7 +696,7 @@
   }
   .btn-save:active { transform: scale(.97); }
   .btn-cancel {
-    font-family: 'Rajdhani', sans-serif;
+    font-family: var(--font);
     font-weight: 700;
     font-size: 14px;
     padding: 10px 20px;
@@ -668,7 +716,7 @@
     margin-bottom: 8px;
   }
   .settings-section h3 {
-    font-family: 'Rajdhani', sans-serif;
+    font-family: var(--font);
     font-size: 15px;
     color: var(--blue);
     text-transform: uppercase;
@@ -697,6 +745,12 @@
   }
   .theme-swatch:hover { transform: scale(1.1); }
   .theme-swatch.sel { box-shadow: 0 0 0 3px var(--ink); }
+  .color-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px 16px; margin-top: 14px; }
+  .color-item { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+  .color-item label { font-size: 13px; color: var(--ink); }
+  .color-item input[type=color] { width: 46px; height: 32px; border: 1px solid var(--line); border-radius: 6px; background: none; cursor: pointer; padding: 2px; }
+  .admin-only-block { display: none; }
+  body.is-admin .admin-only-block { display: block; }
 
   /* ── ŞOFÖR LİSTESİ (modal içi) ── */
   .list-toolbar {
@@ -721,7 +775,7 @@
   .search-bar input {
     border: none;
     outline: none;
-    font-family: 'Source Serif 4', Georgia, serif;
+    font-family: var(--font);
     font-size: 15px;
     flex: 1;
     color: var(--ink);
@@ -729,13 +783,13 @@
   }
   .search-bar input::placeholder { color: #bbb; font-style: italic; }
   .search-count {
-    font-family: 'Rajdhani', sans-serif;
+    font-family: var(--font);
     font-size: 13px;
     color: #999;
     white-space: nowrap;
   }
   .btn-new {
-    font-family: 'Rajdhani', sans-serif;
+    font-family: var(--font);
     font-weight: 700;
     font-size: 14px;
     letter-spacing: .5px;
@@ -762,7 +816,7 @@
   table { width: 100%; border-collapse: collapse; }
   thead tr { background: var(--blue); color: #fff; }
   thead th {
-    font-family: 'Rajdhani', sans-serif;
+    font-family: var(--font);
     font-weight: 700;
     font-size: 13px;
     letter-spacing: .5px;
@@ -780,7 +834,7 @@
     border: none;
     border-radius: 5px;
     cursor: pointer;
-    font-family: 'Rajdhani', sans-serif;
+    font-family: var(--font);
     font-weight: 700;
     font-size: 12px;
     padding: 5px 12px;
@@ -792,13 +846,13 @@
   .btn-del:hover  { background: var(--red); color: #fff; }
   .empty-state { text-align: center; padding: 50px 20px; color: #bbb; }
   .empty-state svg { margin-bottom: 14px; opacity: .3; }
-  .empty-state p { font-family: 'Rajdhani', sans-serif; font-size: 18px; letter-spacing: 1px; }
+  .empty-state p { font-family: var(--font); font-size: 18px; letter-spacing: 1px; }
   /* SİL ONAY MODALI */
   .del-modal .modal-title { color: var(--red); }
   .del-modal p { font-size: 14px; color: #555; line-height: 1.7; }
   .del-modal strong { color: var(--ink); }
   .btn-del-confirm {
-    font-family: 'Rajdhani', sans-serif;
+    font-family: var(--font);
     font-weight: 700;
     font-size: 14px;
     padding: 10px 24px;
@@ -819,7 +873,7 @@
     color: #fff;
     padding: 10px 20px;
     border-radius: 8px;
-    font-family: 'Rajdhani', sans-serif;
+    font-family: var(--font);
     font-weight: 600;
     font-size: 14px;
     box-shadow: 0 4px 18px rgba(26,58,140,.3);
@@ -850,10 +904,10 @@
     box-shadow: 0 3px 12px rgba(26,58,140,.25);
   }
   .topbar.show { display: flex; }
-  .topbar-brand { font-family: 'Rajdhani', sans-serif; font-weight: 700; letter-spacing: .5px; }
+  .topbar-brand { font-family: var(--font); font-weight: 700; letter-spacing: .5px; }
   .topbar-user { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; font-size: 13px; }
   .topbar-btn {
-    font-family: 'Rajdhani', sans-serif; font-weight: 700; font-size: 13px;
+    font-family: var(--font); font-weight: 700; font-size: 13px;
     background: rgba(255,255,255,.15); color: #fff; border: 1px solid rgba(255,255,255,.45);
     border-radius: 6px; padding: 6px 12px; cursor: pointer;
   }
@@ -880,7 +934,7 @@
     animation: modalIn .25s ease;
   }
   .login-logo { font-size: 42px; text-align: center; }
-  .login-title { font-family:'Rajdhani',sans-serif; text-align:center; color:var(--blue); font-size:22px; margin-top:6px; letter-spacing:1px; }
+  .login-title { font-family:var(--font); text-align:center; color:var(--blue); font-size:22px; margin-top:6px; letter-spacing:1px; }
   .login-sub { text-align:center; color:#888; font-size:13px; margin-bottom:18px; }
   .login-error { color: var(--red); font-size: 13px; min-height: 18px; margin: 4px 2px; }
   .login-hint { color:#aaa; font-size:11.5px; text-align:center; margin-top:14px; line-height:1.5; }
@@ -890,13 +944,13 @@
   ════════════════════════════════════ */
   .ue-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; }
   .ue-section {
-    font-family:'Rajdhani',sans-serif; font-weight:700; font-size:14px; color:var(--blue);
+    font-family:var(--font); font-weight:700; font-size:14px; color:var(--blue);
     text-transform:uppercase; letter-spacing:.5px; border-bottom:2px solid var(--blue-pale);
     padding-bottom:6px; margin-bottom:14px;
   }
   .ue-select, .ue-textarea {
     width: 100%; border: none; border-bottom: 2px solid var(--line); outline: none;
-    font-family:'Source Serif 4',Georgia,serif; font-size:15px; padding:6px 4px; background:transparent; color:var(--ink);
+    font-family:var(--font); font-size:15px; padding:6px 4px; background:transparent; color:var(--ink);
   }
   .ue-textarea { border: 1.5px solid var(--line); border-radius:8px; padding:8px; resize:vertical; }
   .ue-select:focus, .ue-textarea:focus { border-color: var(--blue-light); }
@@ -949,7 +1003,7 @@
 
 <!-- ── ÜST BAR (oturum) ── -->
 <div class="topbar" id="topbar">
-  <div class="topbar-brand">📦 Yük Talebi</div>
+  <div class="topbar-brand">📦 Yükleme Talebi</div>
   <div class="topbar-user">
     <span id="topUserInfo"></span>
     <button class="topbar-btn" id="btnInstall" style="display:none" onclick="installApp()">⬇️ Uygulamayı Kur</button>
@@ -960,23 +1014,42 @@
 
 <!-- ── CONTROLS ── -->
 <div class="controls">
-  <button class="btn btn-primary" onclick="printForm()">🖨️ A4 Yatay – 2 Kopya Yazdır</button>
-  <button class="btn btn-primary" onclick="downloadA4()">⬇️ A4 İndir (Tek Nüsha)</button>
-  <button class="btn btn-primary" onclick="shareA4()">📤 Paylaş (Tek Nüsha)</button>
-  <button class="btn btn-secondary" onclick="fillToday()">📅 Bugünün Tarihi</button>
-  <button class="btn btn-clear" onclick="clearForm()">🗑️ Formu Temizle</button>
+  <div class="dropdown" id="outputDropdown">
+    <button class="btn btn-primary" onclick="toggleOutputMenu(event)">📄 Çıktı Al ▾</button>
+    <div class="dropdown-menu" id="outputMenu">
+      <button type="button" onclick="printForm();closeOutputMenu()">🖨️ Yazdır <small>(A4 yatay · 2 kopya)</small></button>
+      <button type="button" onclick="downloadA4();closeOutputMenu()">⬇️ İndir <small>(A4 PDF · tek nüsha)</small></button>
+      <button type="button" onclick="shareA4();closeOutputMenu()">📤 Paylaş <small>(A4 · tek nüsha)</small></button>
+    </div>
+  </div>
   <button class="btn btn-secondary" onclick="openSoforList()">👤 Şoför Listesi</button>
   <button class="btn btn-secondary" onclick="openSettings()">⚙️ Ayarlar</button>
+  <button class="btn btn-clear" onclick="clearForm()">🗑️ Formu Temizle</button>
 </div>
 
 <!-- ── SCREEN FORM ── -->
 <div class="screen-form">
   <!-- HEADER -->
   <div class="form-header">
-    <!-- LOGO (varsayılan SVG veya kullanıcı logosu) -->
+    <!-- LOGO (kullanıcının logosu veya firma adı) -->
     <div class="logo-svg-wrap" id="screenLogo"></div>
-    <!-- SAĞ: QR + İletişim -->
+    <!-- SAĞ: İletişim + QR -->
     <div class="header-right">
+      <!-- İletişim (kullanıcıya özel) -->
+      <div class="contact-block">
+        <div class="contact-row phone">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
+          <span id="cbPhone"></span>
+        </div>
+        <div class="contact-row">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" style="margin-top:2px"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
+          <span id="cbAddr"></span>
+        </div>
+        <div class="contact-row">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
+          <span id="cbEmail"></span>
+        </div>
+      </div>
       <!-- QR -->
       <div class="qr-wrap" id="qrWrap" onclick="toggleQR(event)">
         <div id="qrcode"></div>
@@ -998,21 +1071,6 @@
             <svg width="20" height="20" fill="none" viewBox="0 0 24 24"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z" fill="#1a3a8c"/></svg>
             <div><strong>E-posta</strong><span class="qr-label-small" id="qaMailLbl">bilgi@muratkocaklojistik.com</span></div>
           </a>
-        </div>
-      </div>
-      <!-- İletişim (kullanıcıya özel – yönetici panelinden doldurulur) -->
-      <div class="contact-block">
-        <div class="contact-row phone">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="#1a3a8c"><path d="M6.6 10.8c1.4 2.8 3.8 5.1 6.6 6.6l2.2-2.2c.3-.3.7-.4 1-.2 1.1.4 2.3.6 3.6.6.6 0 1 .4 1 1V20c0 .6-.4 1-1 1-9.4 0-17-7.6-17-17 0-.6.4-1 1-1h3.5c.6 0 1 .4 1 1 0 1.3.2 2.5.6 3.6.1.3 0 .7-.2 1L6.6 10.8z"/></svg>
-          <span id="cbPhone">0533 483 92 69</span>
-        </div>
-        <div class="contact-row">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="#1a3a8c" style="margin-top:2px"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"/></svg>
-          <span id="cbAddr">Horozluhan Mah. Şüra Cad.<br>Yeni Kamyon Garajı İçi No:1/A<br>Selçuklu / KONYA</span>
-        </div>
-        <div class="contact-row">
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="#1a3a8c"><path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z"/></svg>
-          <span id="cbEmail">bilgi@muratkocaklojistik.com</span>
         </div>
       </div>
     </div>
@@ -1191,14 +1249,24 @@
     </div>
 
     <div class="settings-section">
-      <h3>Tema Rengi (Kişiselleştir)</h3>
-      <div class="theme-swatches" id="themeSwatches"></div>
-      <div style="display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;">
-        <label style="font-size:13px;color:#555;">Özel renk:</label>
-        <input type="color" id="themeCustom" value="#1a3a8c" onchange="setTheme(this.value)" style="width:46px;height:34px;border:none;background:none;cursor:pointer;">
-        <button class="btn-cancel" onclick="setTheme('')">↺ Varsayılan</button>
+      <h3>Renk Teması (Kişiselleştir)</h3>
+      <p class="settings-hint" style="margin-top:0;">Hazır renklerden seç ya da aşağıdan her rengi tek tek ayarla.</p>
+      <div class="theme-swatches" id="themeSwatches" style="margin-top:8px;"></div>
+      <div class="color-grid">
+        <div class="color-item"><label>Ana Renk</label><input type="color" id="thc_accent" value="#1a3a8c" onchange="setThemeField('accent',this.value)"></div>
+        <div class="color-item"><label>Sayfa Arka Planı</label><input type="color" id="thc_bg" value="#eef2f9" onchange="setThemeField('bg',this.value)"></div>
+        <div class="color-item"><label>Kart / Form</label><input type="color" id="thc_card" value="#ffffff" onchange="setThemeField('card',this.value)"></div>
+        <div class="color-item"><label>Yazı Rengi</label><input type="color" id="thc_text" value="#1b2333" onchange="setThemeField('text',this.value)"></div>
       </div>
-      <p class="settings-hint">Seçtiğiniz renk butonlara, başlıklara ve vurgulara uygulanır; size özel bir görünüm verir.</p>
+      <div style="margin-top:12px;"><button class="btn-cancel" onclick="resetTheme()">↺ Varsayılan görünüme dön</button></div>
+    </div>
+
+    <div class="settings-section admin-only-block">
+      <h3>Gelişmiş: Özel CSS (Yönetici)</h3>
+      <p class="settings-hint" style="margin-top:0;">İleri düzey: kendi CSS kurallarını yazıp tasarımı dilediğin gibi değiştirebilirsin.
+        Örn: <code>.form-title{letter-spacing:6px}</code></p>
+      <textarea id="customCssBox" class="ue-textarea" rows="5" placeholder="/* CSS kuralların buraya */" style="margin-top:8px;font-family:monospace;font-size:13px;"></textarea>
+      <div style="margin-top:10px;"><button class="btn-save" onclick="saveCustomCss()">💾 CSS'i Uygula</button></div>
     </div>
   </div>
 </div>
@@ -1341,7 +1409,7 @@
 <div class="login-overlay" id="loginOverlay">
   <div class="login-card">
     <div class="login-logo">📦</div>
-    <h2 class="login-title">Yük Talebi Girişi</h2>
+    <h2 class="login-title">Yükleme Talebi</h2>
     <p class="login-sub">Devam etmek için giriş yapın</p>
     <div class="modal-field">
       <label>Kullanıcı Adı</label>
@@ -1412,13 +1480,14 @@
       </div>
       <div>
         <div class="ue-section">Üst Bilgi (Antet) – bu kullanıcıya özel</div>
-        <div class="modal-field"><label>Firma / Başlık</label><input type="text" id="ue_company" placeholder="Örn: Murat Koçak Lojistik"></div>
+        <div class="modal-field"><label>Firma / Başlık</label><input type="text" id="ue_company" placeholder="Örn: Yıldız Nakliyat"></div>
         <div class="modal-field"><label>Telefon</label><input type="text" id="ue_phone" inputmode="tel" placeholder="0533 000 00 00"></div>
         <div class="modal-field"><label>Adres (çok satır olabilir)</label><textarea id="ue_addr" rows="3" class="ue-textarea" placeholder="Mah. Cad. No / İlçe / İl"></textarea></div>
         <div class="modal-field"><label>E-posta</label><input type="text" id="ue_email" inputmode="email" placeholder="bilgi@firma.com"></div>
         <div class="modal-field"><label>Harita Linki (opsiyonel)</label><input type="text" id="ue_maps" placeholder="https://maps.google.com/..."></div>
         <div class="modal-field"><label>QR İçeriği (link/metin – karekod bunu açar)</label><input type="text" id="ue_qr" placeholder="https://firma.com veya tel:0533..."></div>
-        <div class="modal-field"><label>Tema Rengi</label><input type="color" id="ue_theme" value="#1a3a8c" style="width:54px;height:36px;border:none;background:none;cursor:pointer;"></div>
+        <div class="modal-field"><label>Tema Ana Rengi</label><input type="color" id="ue_theme" value="#1a3a8c" style="width:54px;height:36px;border:none;background:none;cursor:pointer;"></div>
+        <div class="modal-field"><label>Özel CSS (bu kullanıcıya)</label><textarea id="ue_css" class="ue-textarea" rows="3" placeholder="/* opsiyonel CSS */" style="font-family:monospace;font-size:12.5px;"></textarea></div>
         <div class="modal-field">
           <label>Logo</label>
           <div class="logo-preview-box" id="ue_logoPreview" style="min-height:70px;"></div>
@@ -1505,16 +1574,24 @@ const DEFAULT_LOGO_SVG_PRINT = `
 const USERS_KEY = 'mk_users';
 const SESSION_KEY = 'mk_session';
 
+/* Varsayılanlar BOŞ — her kullanıcı yalnızca yöneticinin kendisine tanımladığı
+   bilgiyi görür (hazır marka/örnek gelmez). */
 const DEFAULT_PROFILE = {
-  company: '',   /* boşsa varsayılan MK logosu görünür */
-  phone: '0533 483 92 69',
-  addr: 'Horozluhan Mah. Şüra Cad.\nYeni Kamyon Garajı İçi No:1/A\nSelçuklu / KONYA',
-  email: 'bilgi@muratkocaklojistik.com',
-  maps: 'https://maps.google.com/?q=Horozluhan+Mah+Şüra+Cad+Yeni+Kamyon+Garajı+No:1/A+Selçuklu+Konya',
-  qr: 'https://wa.me/905334839269',
+  company: '',
+  phone: '',
+  addr: '',
+  email: '',
+  maps: '',
+  qr: '',
   logo: '',
-  theme: ''
+  theme: { accent: '', bg: '', card: '', text: '', css: '' }
 };
+/* Tema değerini her zaman nesneye çevir (eski sürümde düz renk metni olabilir) */
+function normTheme(t) {
+  if (!t) return { accent: '', bg: '', card: '', text: '', css: '' };
+  if (typeof t === 'string') return { accent: t, bg: '', card: '', text: '', css: '' };
+  return Object.assign({ accent: '', bg: '', card: '', text: '', css: '' }, t);
+}
 
 let activeProfile = Object.assign({}, DEFAULT_PROFILE);
 let currentUser = null;
@@ -1550,7 +1627,8 @@ function waNormalize(d) {
 /* Üst bilgiyi (logo + iletişim + QR) aktif kullanıcıya göre uygula */
 function applyProfile(p) {
   activeProfile = Object.assign({}, DEFAULT_PROFILE, p || {});
-  applyTheme(activeProfile.theme || '');
+  activeProfile.theme = normTheme(activeProfile.theme);
+  applyTheme(activeProfile.theme);
   const ph = activeProfile.phone || '';
   setText('cbPhone', ph);
   const addrEl = document.getElementById('cbAddr');
@@ -1590,6 +1668,15 @@ function startSession(rec) {
   const comp = (rec.profile && rec.profile.company) ? rec.profile.company + ' · ' : '';
   setText('topUserInfo', comp + rec.user + (rec.role === 'admin' ? ' (yönetici)' : ''));
   applyProfile(rec.profile || DEFAULT_PROFILE);
+  setTodayIfEmpty();
+}
+/* Tarih alanı boşsa bugünün tarihini otomatik yaz (düzenlenebilir kalır) */
+function setTodayIfEmpty() {
+  const el = document.getElementById('tarih');
+  if (el && !el.value.trim()) {
+    const n = new Date();
+    el.value = String(n.getDate()).padStart(2, '0') + ' / ' + String(n.getMonth() + 1).padStart(2, '0') + ' / ' + n.getFullYear();
+  }
 }
 function logout() {
   setSession(null);
@@ -1615,9 +1702,22 @@ function installApp() {
   else { showToast('Tarayıcı menüsünden "Uygulamayı yükle / Kur" seçeneğini kullanın'); }
 }
 
+/* ── Çıktı menüsü (Yazdır / İndir / Paylaş) ── */
+function toggleOutputMenu(e) {
+  if (e) e.stopPropagation();
+  document.getElementById('outputMenu').classList.toggle('open');
+}
+function closeOutputMenu() {
+  const m = document.getElementById('outputMenu');
+  if (m) m.classList.remove('open');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#outputDropdown')) closeOutputMenu();
+});
+
 /* ══════════════════════════════════════════════
-   KİŞİSELLEŞTİRİLEBİLİR TEMA (renk)
-   activeProfile.theme = ana renk (hex). Boşsa varsayılan lacivert.
+   KİŞİSELLEŞTİRİLEBİLİR TEMA (renkler + özel CSS)
+   activeProfile.theme = { accent, bg, card, text, css }
 ══════════════════════════════════════════════ */
 const THEME_PRESETS = [
   { name: 'Lacivert', color: '#1a3a8c' },
@@ -1627,6 +1727,12 @@ const THEME_PRESETS = [
   { name: 'Mor',      color: '#5b2a86' },
   { name: 'Turuncu',  color: '#c0561a' },
   { name: 'Antrasit', color: '#2c3e50' }
+];
+const THEME_FIELDS = [
+  { key: 'accent', label: 'Ana Renk',        def: '#1a3a8c' },
+  { key: 'bg',     label: 'Sayfa Arka Planı', def: '#eef2f9' },
+  { key: 'card',   label: 'Kart / Form',      def: '#ffffff' },
+  { key: 'text',   label: 'Yazı Rengi',       def: '#1b2333' }
 ];
 function hexToRgb(h) {
   h = (h || '').replace('#', '');
@@ -1639,38 +1745,68 @@ function mixWhite(hex, amount) { /* amount: 0=renk, 1=beyaz */
   const f = v => Math.round(v + (255 - v) * amount);
   return `rgb(${f(c.r)},${f(c.g)},${f(c.b)})`;
 }
-function applyTheme(hex) {
+/* Tema (renkler + özel CSS) uygula */
+function applyTheme(theme) {
+  const t = normTheme(theme);
   const root = document.documentElement;
-  if (!hex) {
-    root.style.removeProperty('--blue');
-    root.style.removeProperty('--blue-light');
-    root.style.removeProperty('--blue-pale');
-    return;
-  }
-  root.style.setProperty('--blue', hex);
-  root.style.setProperty('--blue-light', mixWhite(hex, 0.22));
-  root.style.setProperty('--blue-pale', mixWhite(hex, 0.90));
+  const set = (varName, val) => val ? root.style.setProperty(varName, val) : root.style.removeProperty(varName);
+  set('--blue', t.accent);
+  set('--blue-light', t.accent ? mixWhite(t.accent, 0.22) : '');
+  set('--blue-pale', t.accent ? mixWhite(t.accent, 0.90) : '');
+  set('--bg', t.bg);
+  set('--card', t.card);
+  set('--ink', t.text);
   const meta = document.querySelector('meta[name="theme-color"]');
-  if (meta) meta.setAttribute('content', hex);
+  if (meta && t.accent) meta.setAttribute('content', t.accent);
+  /* yöneticinin eklediği özel CSS */
+  let cssEl = document.getElementById('userCustomCss');
+  if (!cssEl) { cssEl = document.createElement('style'); cssEl.id = 'userCustomCss'; document.head.appendChild(cssEl); }
+  cssEl.textContent = t.css || '';
 }
-/* Kullanıcı kendi temasını seçer (Ayarlar) */
-function setTheme(hex) {
-  activeProfile.theme = hex || '';
+/* Kullanıcı/yönetici tek bir rengi değiştirir (Ayarlar) */
+function setThemeField(key, val) {
+  const t = normTheme(activeProfile.theme);
+  t[key] = val || '';
+  activeProfile.theme = t;
+  persistCurrentUser();
+  applyTheme(t);
+  renderThemeSwatches();
+}
+/* Hazır renk paletinden ana rengi seç */
+function setAccent(hex) { setThemeField('accent', hex); showToast('🎨 Renk uygulandı', true); }
+/* Özel CSS kaydet */
+function saveCustomCss() {
+  const t = normTheme(activeProfile.theme);
+  t.css = document.getElementById('customCssBox').value || '';
+  activeProfile.theme = t;
+  persistCurrentUser();
+  applyTheme(t);
+  showToast('✅ Özel CSS uygulandı', true);
+}
+function resetTheme() {
+  activeProfile.theme = { accent: '', bg: '', card: '', text: '', css: '' };
   persistCurrentUser();
   applyTheme(activeProfile.theme);
   renderThemeSwatches();
-  showToast('🎨 Tema güncellendi', true);
+  showToast('↺ Varsayılan görünüme dönüldü');
 }
 function renderThemeSwatches() {
+  const t = normTheme(activeProfile.theme);
   const box = document.getElementById('themeSwatches');
-  if (!box) return;
-  const cur = (activeProfile && activeProfile.theme) || '#1a3a8c';
-  box.innerHTML = THEME_PRESETS.map(p =>
-    `<button type="button" class="theme-swatch${p.color.toLowerCase() === cur.toLowerCase() ? ' sel' : ''}"
-       style="background:${p.color}" title="${p.name}" onclick="setTheme('${p.color}')"></button>`
-  ).join('');
-  const picker = document.getElementById('themeCustom');
-  if (picker) picker.value = /^#/.test(cur) ? cur : '#1a3a8c';
+  if (box) {
+    const cur = (t.accent || '#1a3a8c').toLowerCase();
+    box.innerHTML = THEME_PRESETS.map(p =>
+      `<button type="button" class="theme-swatch${p.color.toLowerCase() === cur ? ' sel' : ''}"
+         style="background:${p.color}" title="${p.name}" onclick="setAccent('${p.color}')"></button>`
+    ).join('');
+  }
+  /* renk seçici input'ları doldur */
+  THEME_FIELDS.forEach(f => {
+    const inp = document.getElementById('thc_' + f.key);
+    if (inp) inp.value = t[f.key] || f.def;
+  });
+  const cssBox = document.getElementById('customCssBox');
+  if (cssBox && document.activeElement !== cssBox) cssBox.value = t.css || '';
 }
 
 /* ══════════════════════════════════════════════
@@ -1727,11 +1863,13 @@ function logoMarkup(forPrint) {
   const p = activeProfile || {};
   if (p.logo) return `<img src="${p.logo}" alt="Logo">`;
   if (p.company && p.company.trim()) {
-    const size = forPrint ? '13pt' : '20px';
-    const mw = forPrint ? '48mm' : '230px';
-    return `<div style="font-family:'Rajdhani',Arial,sans-serif;font-weight:700;color:#1a3a8c;font-size:${size};line-height:1.15;max-width:${mw};">${esc(p.company)}</div>`;
+    const size = forPrint ? '15pt' : '22px';
+    const mw = forPrint ? '60mm' : '240px';
+    const col = forPrint ? '#1a3a8c' : 'var(--blue)';
+    return `<div class="logo-placeholder" style="font-size:${size};max-width:${mw};color:${col};">${esc(p.company)}</div>`;
   }
-  return forPrint ? DEFAULT_LOGO_SVG_PRINT : DEFAULT_LOGO_SVG;
+  /* Logo/firma tanımlı değilse boş bırak (varsayılan marka gösterme) */
+  return forPrint ? '' : '<span class="logo-placeholder" style="color:var(--muted);font-weight:600;font-size:14px;">&nbsp;</span>';
 }
 function applyLogo() {
   const el = document.getElementById('screenLogo');
@@ -1821,7 +1959,9 @@ function fillUserForm(u) {
   document.getElementById('ue_email').value = p.email || '';
   document.getElementById('ue_maps').value = p.maps || '';
   document.getElementById('ue_qr').value = p.qr || '';
-  document.getElementById('ue_theme').value = p.theme || '#1a3a8c';
+  const th = normTheme(p.theme);
+  document.getElementById('ue_theme').value = th.accent || '#1a3a8c';
+  document.getElementById('ue_css').value = th.css || '';
   ueLogoData = p.logo || '';
   ueRenderLogoPreview();
 }
@@ -1861,6 +2001,10 @@ function adminSaveUser() {
   const list = getUsers();
   const dup = list.findIndex((x, idx) => idx !== adminEditIdx && (x.user || '').toLowerCase() === user.toLowerCase());
   if (dup >= 0) { showToast('⚠️ Bu kullanıcı adı zaten kullanımda'); return; }
+  /* mevcut tema renklerini koru, accent + css'i editörden al */
+  const prevTheme = normTheme(adminEditIdx >= 0 && list[adminEditIdx].profile ? list[adminEditIdx].profile.theme : null);
+  prevTheme.accent = document.getElementById('ue_theme').value || '';
+  prevTheme.css = document.getElementById('ue_css').value || '';
   const obj = {
     user, pass,
     role: document.getElementById('ue_role').value,
@@ -1873,7 +2017,7 @@ function adminSaveUser() {
       email: document.getElementById('ue_email').value.trim(),
       maps: document.getElementById('ue_maps').value.trim(),
       qr: document.getElementById('ue_qr').value.trim(),
-      theme: document.getElementById('ue_theme').value || '',
+      theme: prevTheme,
       logo: ueLogoData || ''
     }
   };
@@ -2184,6 +2328,7 @@ function clearForm() {
   refreshGidecegiMode();
   signatureData = null;
   renderSignBox();
+  setTodayIfEmpty();   /* tarih tekrar bugüne dönsün */
 }
 
 /* ── Gideceği values (yalnız adresler) ── */
