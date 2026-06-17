@@ -1688,7 +1688,7 @@ function logout() {
 function initAuth() {
   const list = seedUsers();
   const onlyDefault = list.length === 1 && list[0].user === 'admin' && list[0].pass === 'admin';
-  setText('loginHint', onlyDefault ? 'İlk giriş için: kullanıcı "admin", şifre "admin" (sonra yönetici panelinden değiştirin).' : '');
+  setText('loginHint', onlyDefault ? '' : '');
   const s = getSession();
   const rec = s && findUser(s.user);
   if (rec && Number(rec.active) && !isExpired(rec)) startSession(rec);
