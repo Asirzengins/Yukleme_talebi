@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Murat Koçak Lojistik – Yük Talebi</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap');
   :root {
@@ -314,8 +316,58 @@
     margin: 14px 0 10px;
   }
   .sign-row { display: flex; justify-content: flex-end; margin-top: 18px; }
-  .sign-box { text-align: center; font-size: 12px; color: #666; line-height: 2; }
+  .sign-box { text-align: center; font-size: 12px; color: #666; }
   .sign-line { width: 160px; border-bottom: 1.5px solid var(--line); margin: 28px auto 0; }
+  .sign-name { font-weight: 600; color: var(--ink); font-size: 14px; min-height: 18px; margin-bottom: 6px; }
+  .sign-pad {
+    width: 200px;
+    height: 90px;
+    border: 1.5px dashed var(--line);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    background: #fafbfe;
+    overflow: hidden;
+    transition: border-color .15s, background .15s;
+  }
+  .sign-pad:hover { border-color: var(--blue-light); background: var(--blue-pale); }
+  .sign-pad img { max-width: 100%; max-height: 100%; object-fit: contain; }
+  .sign-pad span { color: #bbb; font-style: italic; font-size: 12px; }
+  .sign-caption { font-size: 11px; color: #888; margin-top: 6px; }
+  /* İmza tuvali (modal) */
+  .sig-canvas-wrap {
+    width: 100%;
+    height: 220px;
+    border: 1.5px solid var(--line);
+    border-radius: 10px;
+    background: #fff;
+    position: relative;
+    overflow: hidden;
+  }
+  #sigCanvas { width: 100%; height: 100%; touch-action: none; cursor: crosshair; display: block; }
+  .sig-hint { font-size: 12px; color: #888; text-align: center; margin: 10px 0 0; }
+  .btn-clear-sig {
+    font-family: 'Rajdhani', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 10px 20px;
+    border: 2px solid var(--red);
+    border-radius: 6px;
+    cursor: pointer;
+    background: #fff;
+    color: var(--red);
+    margin-right: auto;
+  }
+  /* Tek nüsha A4 oluşturma alanı (ekran dışı – indir/paylaş için) */
+  #a4Single {
+    position: fixed;
+    left: -10000px;
+    top: 0;
+    width: 794px;
+    background: #fff;
+  }
   /* ════════════════════════
      PRINT
   ════════════════════════ */
@@ -714,6 +766,43 @@
     from { opacity:0; transform: translateY(10px); }
     to   { opacity:1; transform: translateY(0); }
   }
+
+  /* ════════════════════════════════════
+     TELEFON / MOBİL GÖRÜNÜM
+  ════════════════════════════════════ */
+  @media (max-width: 640px) {
+    body { padding: 14px 10px; }
+    .controls { gap: 8px; width: 100%; }
+    .controls .btn, .controls .btn-primary, .controls .btn-secondary, .controls .btn-clear {
+      flex: 1 1 46%;
+      padding: 11px 10px;
+      font-size: 13px;
+      text-align: center;
+    }
+    .screen-form { padding: 18px 15px; border-radius: 10px; }
+    .form-header { flex-direction: column; align-items: stretch; gap: 14px; }
+    .logo-svg-wrap { justify-content: center; }
+    .logo-svg-wrap img, .logo-svg-wrap svg { max-height: 60px; }
+    .header-right { justify-content: space-between; align-items: center; }
+    .contact-block { text-align: left; }
+    .contact-block .contact-row { justify-content: flex-start; }
+    .form-title { font-size: 21px; letter-spacing: 2px; }
+    .date-row { justify-content: flex-start; }
+    /* alanları alt alta diz */
+    .field-row { flex-direction: column; align-items: stretch; gap: 4px; margin-bottom: 15px; }
+    .field-label { min-width: 0; padding-bottom: 0; font-size: 12.5px; }
+    .field-input, .gidecegi-row input { font-size: 16px; } /* iOS zoom engelle */
+    .miktar-part input, .fiyat-group input, .date-row input { font-size: 16px; }
+    .sofor-input-wrap { width: 100%; }
+    .sign-row { justify-content: center; }
+    .sign-pad { width: 100%; max-width: 320px; }
+    .modal { padding: 20px 16px; }
+    .modal-wide { max-width: 100%; }
+    .list-toolbar { flex-direction: column; align-items: stretch; }
+    .btn-new { justify-content: center; }
+    .table-card { overflow-x: auto; }
+    table { min-width: 520px; }
+  }
 </style>
 </head>
 <body>
@@ -721,6 +810,8 @@
 <!-- ── CONTROLS ── -->
 <div class="controls">
   <button class="btn btn-primary" onclick="printForm()">🖨️ A4 Yatay – 2 Kopya Yazdır</button>
+  <button class="btn btn-primary" onclick="downloadA4()">⬇️ A4 İndir (Tek Nüsha)</button>
+  <button class="btn btn-primary" onclick="shareA4()">📤 Paylaş (Tek Nüsha)</button>
   <button class="btn btn-secondary" onclick="fillToday()">📅 Bugünün Tarihi</button>
   <button class="btn btn-clear" onclick="clearForm()">🗑️ Formu Temizle</button>
   <button class="btn btn-secondary" onclick="openSoforList()">👤 Şoför Listesi</button>
@@ -894,7 +985,14 @@
   </p>
 
   <div class="sign-row">
-    <div class="sign-box">Adı, Soyadı<br>İmza<div class="sign-line"></div></div>
+    <div class="sign-box">
+      <div class="sign-name" id="signName">—</div>
+      <div class="sign-pad" id="signPad" onclick="openSignature()" title="İmza atmak için dokunun">
+        <img id="signImg" alt="İmza" style="display:none">
+        <span id="signPlaceholder">✍️ İmza için dokunun</span>
+      </div>
+      <div class="sign-caption">Adı, Soyadı / İmza</div>
+    </div>
   </div>
 </div>
 
@@ -1044,6 +1142,33 @@
     </div>
   </div>
 </div>
+
+<!-- ══════════════════════════
+     İMZA MODALI
+══════════════════════════ -->
+<div class="modal-overlay" id="sigOverlay" style="z-index:650" onclick="overlayClick(event,'sigOverlay')">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l7-7 3 3-7 7-3-3z"/><path d="M18 13l-1.5-7.5L2 2l3.5 14.5L13 18l5-5z"/><path d="M2 2l7.586 7.586"/><circle cx="11" cy="11" r="2"/></svg>
+        Şoför İmzası
+      </div>
+      <button class="modal-close" onclick="closeModals()" title="Kapat">×</button>
+    </div>
+    <div class="sig-canvas-wrap">
+      <canvas id="sigCanvas"></canvas>
+    </div>
+    <p class="sig-hint">Lütfen yukarıdaki alana parmağınız veya kalemle imzalayın.</p>
+    <div class="modal-actions">
+      <button class="btn-clear-sig" onclick="clearSignature()">🧹 Temizle</button>
+      <button class="btn-cancel" onclick="closeModals()">İptal</button>
+      <button class="btn-save" onclick="saveSignature()">💾 İmzayı Kaydet</button>
+    </div>
+  </div>
+</div>
+
+<!-- Tek nüsha A4 (ekran dışı – indir/paylaş çıktısı için) -->
+<div id="a4Single"></div>
 
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
@@ -1202,11 +1327,13 @@ function soforSec(s) {
   document.getElementById('gsm').value       = s.tel   || '';
   closeDropdown();
   soforNoSave = false;
+  renderSignBox();
 }
 
 /* Arama & dropdown güncelle */
 function soforSearch(val) {
   soforNoSave = false;
+  renderSignBox();
   const dd = document.getElementById('soforDropdown');
   const q = val.trim().toLowerCase();
   if (q.length < 1) { closeDropdown(); return; }
@@ -1367,6 +1494,8 @@ function clearForm() {
     <input type="text" placeholder="Varış adresi">
     <button class="btn-add-row" onclick="addGidecegi()" title="Satır ekle">＋</button>
   </div>`;
+  signatureData = null;
+  renderSignBox();
 }
 
 /* ── Gideceği values ── */
@@ -1419,18 +1548,269 @@ function buildCopyHTML(label) {
     <div class="pf"><label>Referans Tel</label><span>${v('ref_tel')}</span></div>
     <div class="pf"><label>GSM</label><span>${v('gsm')}</span></div>
     <p class="p-info" style="font-size:6pt;">Yukarıda muhteviyatı yazılı yükü, belirtilen adrese eksiksiz ve kusursuz nakletmek üzere alınmış. Kabul etmiş bulunmaktayım. Yolda meydana gelebilecek zarar ve ziyandan olabilecek trafik cezalarından tamamen ben sorumlu olmak üzere ilgili yükü taşımayı taahhüt ediyorum. İhtilaf vukuunda Konya Mahkemelerinin selahiyetini kabul ederim.</p>
-    <div class="p-sign">Adı, Soyadı &nbsp;&nbsp; İmza<div class="p-sign-line"></div></div>
+    <div class="p-sign">
+      <div style="font-weight:700;">${v('sofor_ad')}</div>
+      ${signatureData ? `<img src="${signatureData}" style="height:13mm;max-width:42mm;object-fit:contain;display:block;margin:1mm 0 0 auto;">` : ''}
+      <div class="p-sign-line"></div>
+      Adı, Soyadı / İmza
+    </div>
   `;
 }
 
-function printForm() {
+/* Yazdırma/indirme/paylaşım öncesi şoförü otomatik kaydet */
+function autoSaveSofor() {
   if (!soforNoSave) {
     const s = currentSoforObj();
     if (s.ad) { saveSofor(s); }
   }
+}
+
+function printForm() {
+  autoSaveSofor();
   document.getElementById('pc1').innerHTML = buildCopyHTML('Müşteri Nüshası');
   document.getElementById('pc2').innerHTML = buildCopyHTML('Şoför Nüshası');
   window.print();
+}
+
+/* ══════════════════════════════════════════════
+   ŞOFÖR İMZASI (dokunmatik tuval)
+══════════════════════════════════════════════ */
+let signatureData = null;     // imza dataURL (image/png)
+let sigCtx = null;
+let sigDrawing = false;
+let sigHasInk = false;
+let sigBound = false;         // pointer olayları bir kez bağlandı mı
+
+/* Alt sağdaki imza kutusunu güncelle (isim + imza) */
+function renderSignBox() {
+  const name = (v('sofor_ad') || '').trim();
+  document.getElementById('signName').textContent = name || '—';
+  const img = document.getElementById('signImg');
+  const ph  = document.getElementById('signPlaceholder');
+  if (signatureData) {
+    img.src = signatureData;
+    img.style.display = 'block';
+    ph.style.display = 'none';
+  } else {
+    img.removeAttribute('src');
+    img.style.display = 'none';
+    ph.style.display = 'block';
+  }
+}
+
+function openSignature() {
+  document.getElementById('sigOverlay').classList.add('open');
+  setTimeout(initSigCanvas, 40);   // pencere açılınca tuvali boyutlandır
+}
+
+function initSigCanvas() {
+  const c = document.getElementById('sigCanvas');
+  const rect = c.getBoundingClientRect();
+  c.width  = Math.max(1, Math.round(rect.width));
+  c.height = Math.max(1, Math.round(rect.height));
+  sigCtx = c.getContext('2d');
+  sigCtx.lineWidth = 2.5;
+  sigCtx.lineCap = 'round';
+  sigCtx.lineJoin = 'round';
+  sigCtx.strokeStyle = '#0a1a4a';
+  sigHasInk = false;
+
+  if (!sigBound) {
+    sigBound = true;
+    const pos = e => {
+      const r = c.getBoundingClientRect();
+      return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+    c.addEventListener('pointerdown', e => {
+      e.preventDefault();
+      sigDrawing = true;
+      const p = pos(e);
+      sigCtx.beginPath();
+      sigCtx.moveTo(p.x, p.y);
+      try { c.setPointerCapture(e.pointerId); } catch (_) {}
+    });
+    c.addEventListener('pointermove', e => {
+      if (!sigDrawing) return;
+      const p = pos(e);
+      sigCtx.lineTo(p.x, p.y);
+      sigCtx.stroke();
+      sigHasInk = true;
+    });
+    const end = () => { sigDrawing = false; };
+    c.addEventListener('pointerup', end);
+    c.addEventListener('pointercancel', end);
+    c.addEventListener('pointerleave', end);
+  }
+}
+
+function clearSignature() {
+  if (sigCtx) sigCtx.clearRect(0, 0, sigCtx.canvas.width, sigCtx.canvas.height);
+  sigHasInk = false;
+}
+
+function saveSignature() {
+  if (!sigHasInk) { showToast('⚠️ Önce imza atın'); return; }
+  signatureData = document.getElementById('sigCanvas').toDataURL('image/png');
+  renderSignBox();
+  document.getElementById('sigOverlay').classList.remove('open');
+  showToast('✅ İmza eklendi', true);
+}
+
+/* ══════════════════════════════════════════════
+   TEK NÜSHA A4 — İNDİR / PAYLAŞ
+══════════════════════════════════════════════ */
+function fileName(ext) {
+  let base = (v('sayin') || 'yuk-talebi').toString().trim();
+  base = base.replace(/[\\/:*?"<>|]+/g, '').replace(/\s+/g, '_') || 'yuk-talebi';
+  const t = (v('tarih') || '').replace(/[^0-9]/g, '');
+  return 'Yuk-Talebi_' + base + (t ? '_' + t : '') + '.' + ext;
+}
+
+/* Tek nüsha, A4 dikey görünümlü fiş (kendi içinde stillenmiş) */
+function buildA4HTML() {
+  const gidecegi = getGidecegiValues().filter(x => (x || '').trim() !== '');
+  const fiyat = v('fiyati');
+  const fiyatDisplay = fiyat ? fiyat + ' + KDV' : '';
+  const row = (label, val) =>
+    `<tr><td style="width:34%;font-weight:700;color:#1a3a8c;padding:7px 8px;vertical-align:top;">${label}</td>
+         <td style="border-bottom:1px solid #cfd6e6;padding:7px 8px;">${val || ''}</td></tr>`;
+  const gidecegiHTML = gidecegi.length
+    ? gidecegi.map(g => `<div style="border-bottom:1px solid #cfd6e6;padding:4px 0;">${g}</div>`).join('')
+    : '<div style="border-bottom:1px solid #cfd6e6;padding:4px 0;">&nbsp;</div>';
+
+  return `
+  <div style="font-family:Arial,Helvetica,sans-serif;color:#111;padding:34px 38px;box-sizing:border-box;">
+    <div style="display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #1a3a8c;padding-bottom:14px;">
+      <div style="flex-shrink:0;">${logoMarkup(false)}</div>
+      <div style="text-align:right;font-size:12px;color:#333;line-height:1.7;">
+        <div style="font-weight:700;font-size:14px;color:#1a3a8c;">☎ 0533 483 92 69</div>
+        Horozluhan Mah. Şüra Cad.<br>
+        Yeni Kamyon Garajı İçi No:1/A<br>
+        Selçuklu / KONYA<br>
+        ✉ bilgi@muratkocaklojistik.com
+      </div>
+    </div>
+
+    <div style="text-align:center;font-weight:900;font-size:26px;letter-spacing:5px;color:#1a3a8c;text-transform:uppercase;margin:18px 0 10px;">YÜK TALEBİ</div>
+    <div style="text-align:right;font-size:13px;color:#1a3a8c;font-weight:700;margin-bottom:8px;">Tarih: ${v('tarih')}</div>
+
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+      ${row('Sayın', v('sayin'))}
+      ${row('Cinsi', v('cinsi'))}
+      <tr><td style="width:34%;font-weight:700;color:#1a3a8c;padding:7px 8px;vertical-align:top;">Gideceği Yer</td>
+          <td style="padding:7px 8px;">${gidecegiHTML}</td></tr>
+      ${row('Miktarı', `${v('miktar_kg') || '—'} KG&nbsp;&nbsp;/&nbsp;&nbsp;${v('miktar_palet') || '—'} PALET`)}
+      ${row('Fiyatı', fiyatDisplay)}
+      ${row('Ödeme Şekli', v('odeme'))}
+    </table>
+
+    <p style="font-size:11px;color:#555;line-height:1.6;background:#eef0f8;padding:10px 12px;border-radius:6px;margin:14px 0 10px;text-align:justify;">
+      Talebiniz üzere yukarıda özellikleri yazılı yükü nakletmek üzere aşağıda plaka ve diğer bilgileri yazılı kamyon emrinize tahsis edilmiştir.
+    </p>
+
+    <div style="font-weight:900;font-size:14px;color:#1a3a8c;text-transform:uppercase;letter-spacing:.5px;margin:12px 0 6px;">Emtiayı Teslim Alan Şoför veya Kamyon Sahibinin</div>
+    <table style="width:100%;border-collapse:collapse;font-size:14px;">
+      ${row('Adı Soyadı', v('sofor_ad'))}
+      ${row('T.C. Kimlik No', v('sofor_tc'))}
+      ${row('Plaka No', v('plaka'))}
+      ${row('Vergi Dairesi No', v('vergi'))}
+      ${row('Referans Tel', v('ref_tel'))}
+      ${row('GSM', v('gsm'))}
+    </table>
+
+    <p style="font-size:10px;color:#555;line-height:1.55;background:#eef0f8;padding:9px 12px;border-radius:6px;margin:12px 0;text-align:justify;">
+      Yukarıda muhteviyatı yazılı yükü, belirtilen adrese eksiksiz ve kusursuz nakletmek üzere alınmış. Kabul etmiş bulunmaktayım. Yolda meydana gelebilecek zarar ve ziyandan olabilecek trafik cezalarından tamamen ben sorumlu olmak üzere ilgili yükü taşımayı taahhüt ediyorum. İhtilaf vukuunda Konya Mahkemelerinin selahiyetini kabul ederim.
+    </p>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:18px;">
+      <div style="text-align:center;font-size:12px;color:#555;">
+        <div style="font-weight:700;color:#111;font-size:14px;margin-bottom:4px;">${v('sofor_ad') || ''}</div>
+        ${signatureData ? `<img src="${signatureData}" style="height:60px;max-width:200px;object-fit:contain;display:block;margin:0 auto;">` : '<div style="height:60px;"></div>'}
+        <div style="border-bottom:1.5px solid #999;width:200px;margin:0 auto 4px;"></div>
+        Adı, Soyadı / İmza
+      </div>
+    </div>
+  </div>`;
+}
+
+/* A4 sayfasını canvas'a çiz */
+async function makeA4Canvas() {
+  const el = document.getElementById('a4Single');
+  el.innerHTML = buildA4HTML();
+  await new Promise(r => setTimeout(r, 60));   // görsellerin yerleşmesi için
+  return await html2canvas(el, { scale: 2, backgroundColor: '#ffffff', useCORS: true });
+}
+
+/* Canvas'tan A4 PDF (jsPDF) üret */
+function canvasToPdf(canvas) {
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF('p', 'mm', 'a4');
+  const pw = 210, ph = 297;
+  let w = pw, h = canvas.height * pw / canvas.width;
+  if (h > ph) { h = ph; w = canvas.width * ph / canvas.height; }
+  const x = (pw - w) / 2;
+  pdf.addImage(canvas.toDataURL('image/jpeg', 0.95), 'JPEG', x, 0, w, h);
+  return pdf;
+}
+
+function downloadBlob(blob, name) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = name;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 4000);
+}
+
+async function downloadA4() {
+  if (typeof html2canvas === 'undefined' || !window.jspdf) {
+    showToast('⚠️ İndirme aracı yüklenemedi (internet?)'); return;
+  }
+  autoSaveSofor();
+  showToast('⏳ A4 PDF hazırlanıyor…');
+  try {
+    const canvas = await makeA4Canvas();
+    const pdf = canvasToPdf(canvas);
+    pdf.save(fileName('pdf'));
+    showToast('✅ A4 PDF indirildi', true);
+  } catch (err) {
+    console.error(err);
+    showToast('⚠️ İndirme başarısız oldu');
+  }
+}
+
+async function shareA4() {
+  if (typeof html2canvas === 'undefined' || !window.jspdf) {
+    showToast('⚠️ Paylaşım aracı yüklenemedi (internet?)'); return;
+  }
+  autoSaveSofor();
+  showToast('⏳ Paylaşım için hazırlanıyor…');
+  try {
+    const canvas = await makeA4Canvas();
+    const pdf = canvasToPdf(canvas);
+    const pdfBlob = pdf.output('blob');
+    const pdfFile = new File([pdfBlob], fileName('pdf'), { type: 'application/pdf' });
+
+    if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+      await navigator.share({ files: [pdfFile], title: 'Yük Talebi', text: 'Yük Talebi Fişi' });
+      return;
+    }
+    // PDF paylaşılamıyorsa görsel (PNG) olarak dene
+    await new Promise(res => canvas.toBlob(async (b) => {
+      const imgFile = new File([b], fileName('png'), { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [imgFile] })) {
+        try { await navigator.share({ files: [imgFile], title: 'Yük Talebi' }); }
+        catch (e) { /* kullanıcı iptal etti */ }
+      } else {
+        downloadBlob(b, fileName('png'));
+        showToast('ℹ️ Paylaşım desteklenmiyor — görsel indirildi');
+      }
+      res();
+    }, 'image/png'));
+  } catch (err) {
+    if (err && err.name === 'AbortError') return;  // kullanıcı paylaşımı iptal etti
+    console.error(err);
+    showToast('⚠️ Paylaşım başarısız oldu');
+  }
 }
 
 /* ══════════════════════════════════════════════
@@ -1593,6 +1973,7 @@ document.addEventListener('keydown', e => {
 /* ── İlk yükleme ── */
 applyLogo();
 renderTable();
+renderSignBox();
 </script>
 </body>
 </html>
