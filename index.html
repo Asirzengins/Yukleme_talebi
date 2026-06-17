@@ -4,6 +4,40 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Murat Koçak Lojistik – Yük Talebi</title>
+<!-- ── Masaüstü / kurulabilir uygulama (PWA) ── -->
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#1a3a8c">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Yük Talebi">
+<script>
+  /* "Uygulamayı Kur" olayını erken yakala (buton sonradan açılır) */
+  window.__deferredInstall = null;
+  window.addEventListener('beforeinstallprompt', function (e) {
+    e.preventDefault();
+    window.__deferredInstall = e;
+    var b = document.getElementById('btnInstall');
+    if (b) b.style.display = 'inline-block';
+  });
+  window.addEventListener('appinstalled', function () {
+    var b = document.getElementById('btnInstall');
+    if (b) b.style.display = 'none';
+  });
+  /* Service worker (çevrimdışı çalışma) */
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', function () {
+      navigator.serviceWorker.register('sw.js').catch(function () {});
+    });
+  }
+</script>
+<!--
+  ╔══════════════════════════════════════════════════════════════╗
+  ║  ONLINE (Supabase) MODU İÇİN: aşağıdaki satırın başındaki      ║
+  ║  yorum işaretlerini kaldırın ve CLOUD-KURULUM.md'yi izleyin.   ║
+  ╚══════════════════════════════════════════════════════════════╝
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+-->
 <script>
   /* Hata yakalayıcı: bir şey çalışmazsa sessiz kalmasın, ekranda görünsün */
   window.addEventListener('error', function (e) {
@@ -655,6 +689,14 @@
   .logo-preview-box img { max-height: 80px; max-width: 100%; object-fit: contain; }
   .logo-preview-box .ph-default-note { color:#aaa; font-style:italic; font-size:12px; }
   .settings-hint { font-size: 11.5px; color: #888; margin-top: 10px; line-height: 1.6; }
+  .theme-swatches { display: flex; flex-wrap: wrap; gap: 10px; }
+  .theme-swatch {
+    width: 34px; height: 34px; border-radius: 50%; cursor: pointer;
+    border: 2px solid #fff; box-shadow: 0 0 0 1.5px var(--line);
+    transition: transform .1s;
+  }
+  .theme-swatch:hover { transform: scale(1.1); }
+  .theme-swatch.sel { box-shadow: 0 0 0 3px var(--ink); }
 
   /* ── ŞOFÖR LİSTESİ (modal içi) ── */
   .list-toolbar {
@@ -910,6 +952,7 @@
   <div class="topbar-brand">📦 Yük Talebi</div>
   <div class="topbar-user">
     <span id="topUserInfo"></span>
+    <button class="topbar-btn" id="btnInstall" style="display:none" onclick="installApp()">⬇️ Uygulamayı Kur</button>
     <button class="topbar-btn admin-only" id="btnAdminPanel" onclick="openAdmin()">🛠️ Yönetici Paneli</button>
     <button class="topbar-btn" onclick="logout()">🚪 Çıkış</button>
   </div>
@@ -1143,9 +1186,19 @@
       </div>
       <p class="settings-hint">
         Kendi logonuzu (PNG / JPG / SVG) yükleyebilirsiniz. Logo sol üstte görünür ve
-        yazdırılan fişlere de yansır. Logo bu cihazın tarayıcısında saklanır (localStorage).
-        Net baskı için geniş ve arka planı şeffaf bir görsel önerilir.
+        yazdırılan fişlere de yansır. Net baskı için geniş ve arka planı şeffaf bir görsel önerilir.
       </p>
+    </div>
+
+    <div class="settings-section">
+      <h3>Tema Rengi (Kişiselleştir)</h3>
+      <div class="theme-swatches" id="themeSwatches"></div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:12px;flex-wrap:wrap;">
+        <label style="font-size:13px;color:#555;">Özel renk:</label>
+        <input type="color" id="themeCustom" value="#1a3a8c" onchange="setTheme(this.value)" style="width:46px;height:34px;border:none;background:none;cursor:pointer;">
+        <button class="btn-cancel" onclick="setTheme('')">↺ Varsayılan</button>
+      </div>
+      <p class="settings-hint">Seçtiğiniz renk butonlara, başlıklara ve vurgulara uygulanır; size özel bir görünüm verir.</p>
     </div>
   </div>
 </div>
@@ -1365,6 +1418,7 @@
         <div class="modal-field"><label>E-posta</label><input type="text" id="ue_email" inputmode="email" placeholder="bilgi@firma.com"></div>
         <div class="modal-field"><label>Harita Linki (opsiyonel)</label><input type="text" id="ue_maps" placeholder="https://maps.google.com/..."></div>
         <div class="modal-field"><label>QR İçeriği (link/metin – karekod bunu açar)</label><input type="text" id="ue_qr" placeholder="https://firma.com veya tel:0533..."></div>
+        <div class="modal-field"><label>Tema Rengi</label><input type="color" id="ue_theme" value="#1a3a8c" style="width:54px;height:36px;border:none;background:none;cursor:pointer;"></div>
         <div class="modal-field">
           <label>Logo</label>
           <div class="logo-preview-box" id="ue_logoPreview" style="min-height:70px;"></div>
@@ -1458,7 +1512,8 @@ const DEFAULT_PROFILE = {
   email: 'bilgi@muratkocaklojistik.com',
   maps: 'https://maps.google.com/?q=Horozluhan+Mah+Şüra+Cad+Yeni+Kamyon+Garajı+No:1/A+Selçuklu+Konya',
   qr: 'https://wa.me/905334839269',
-  logo: ''
+  logo: '',
+  theme: ''
 };
 
 let activeProfile = Object.assign({}, DEFAULT_PROFILE);
@@ -1495,6 +1550,7 @@ function waNormalize(d) {
 /* Üst bilgiyi (logo + iletişim + QR) aktif kullanıcıya göre uygula */
 function applyProfile(p) {
   activeProfile = Object.assign({}, DEFAULT_PROFILE, p || {});
+  applyTheme(activeProfile.theme || '');
   const ph = activeProfile.phone || '';
   setText('cbPhone', ph);
   const addrEl = document.getElementById('cbAddr');
@@ -1516,6 +1572,7 @@ function doLogin() {
   const u = document.getElementById('loginUser').value.trim();
   const p = document.getElementById('loginPass').value;
   const err = document.getElementById('loginError');
+  if (cloudEnabled()) { cloudLogin(u, p); return; }   /* online mod açıksa */
   const rec = findUser(u);
   if (!rec || rec.pass !== p) { err.textContent = 'Kullanıcı adı veya şifre hatalı.'; return; }
   if (!Number(rec.active)) { err.textContent = 'Bu hesap pasif. Yönetici ile görüşün.'; return; }
@@ -1549,6 +1606,119 @@ function initAuth() {
   const rec = s && findUser(s.user);
   if (rec && Number(rec.active) && !isExpired(rec)) startSession(rec);
   else { setSession(null); document.getElementById('loginOverlay').classList.add('show'); }
+}
+
+/* ── Masaüstü uygulama kurulumu ── */
+function installApp() {
+  const dp = window.__deferredInstall;
+  if (dp) { dp.prompt(); window.__deferredInstall = null; }
+  else { showToast('Tarayıcı menüsünden "Uygulamayı yükle / Kur" seçeneğini kullanın'); }
+}
+
+/* ══════════════════════════════════════════════
+   KİŞİSELLEŞTİRİLEBİLİR TEMA (renk)
+   activeProfile.theme = ana renk (hex). Boşsa varsayılan lacivert.
+══════════════════════════════════════════════ */
+const THEME_PRESETS = [
+  { name: 'Lacivert', color: '#1a3a8c' },
+  { name: 'Okyanus',  color: '#0e7490' },
+  { name: 'Zümrüt',   color: '#1a8c4e' },
+  { name: 'Bordo',    color: '#9b1c31' },
+  { name: 'Mor',      color: '#5b2a86' },
+  { name: 'Turuncu',  color: '#c0561a' },
+  { name: 'Antrasit', color: '#2c3e50' }
+];
+function hexToRgb(h) {
+  h = (h || '').replace('#', '');
+  if (h.length === 3) h = h.split('').map(c => c + c).join('');
+  const n = parseInt(h, 16);
+  return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+function mixWhite(hex, amount) { /* amount: 0=renk, 1=beyaz */
+  const c = hexToRgb(hex);
+  const f = v => Math.round(v + (255 - v) * amount);
+  return `rgb(${f(c.r)},${f(c.g)},${f(c.b)})`;
+}
+function applyTheme(hex) {
+  const root = document.documentElement;
+  if (!hex) {
+    root.style.removeProperty('--blue');
+    root.style.removeProperty('--blue-light');
+    root.style.removeProperty('--blue-pale');
+    return;
+  }
+  root.style.setProperty('--blue', hex);
+  root.style.setProperty('--blue-light', mixWhite(hex, 0.22));
+  root.style.setProperty('--blue-pale', mixWhite(hex, 0.90));
+  const meta = document.querySelector('meta[name="theme-color"]');
+  if (meta) meta.setAttribute('content', hex);
+}
+/* Kullanıcı kendi temasını seçer (Ayarlar) */
+function setTheme(hex) {
+  activeProfile.theme = hex || '';
+  persistCurrentUser();
+  applyTheme(activeProfile.theme);
+  renderThemeSwatches();
+  showToast('🎨 Tema güncellendi', true);
+}
+function renderThemeSwatches() {
+  const box = document.getElementById('themeSwatches');
+  if (!box) return;
+  const cur = (activeProfile && activeProfile.theme) || '#1a3a8c';
+  box.innerHTML = THEME_PRESETS.map(p =>
+    `<button type="button" class="theme-swatch${p.color.toLowerCase() === cur.toLowerCase() ? ' sel' : ''}"
+       style="background:${p.color}" title="${p.name}" onclick="setTheme('${p.color}')"></button>`
+  ).join('');
+  const picker = document.getElementById('themeCustom');
+  if (picker) picker.value = /^#/.test(cur) ? cur : '#1a3a8c';
+}
+
+/* ══════════════════════════════════════════════
+   ONLINE (Supabase) – İSTEĞE BAĞLI
+   Anahtarları doldurup head'deki SDK satırını açınca online'a geçer.
+   Boşken uygulama yerel (cihaz) modunda çalışır. Detay: CLOUD-KURULUM.md
+══════════════════════════════════════════════ */
+const CLOUD = { url: '', anonKey: '' };
+let _sb = null;
+function cloudEnabled() {
+  return !!(CLOUD.url && CLOUD.anonKey && typeof window.supabase !== 'undefined');
+}
+function sb() {
+  if (!_sb && cloudEnabled()) _sb = window.supabase.createClient(CLOUD.url, CLOUD.anonKey);
+  return _sb;
+}
+/* Online giriş + TEK OTURUM: profiles.current_session'a kendi token'ımızı yazar,
+   realtime ile başka cihazdan giriş olursa bu oturumu düşürür. */
+async function cloudLogin(username, password) {
+  const err = document.getElementById('loginError');
+  try {
+    const client = sb();
+    const email = username.includes('@') ? username : (username + '@yuktalebi.app');
+    const { data, error } = await client.auth.signInWithPassword({ email, password });
+    if (error) { err.textContent = 'Kullanıcı adı veya şifre hatalı.'; return; }
+    const { data: prof } = await client.from('profiles').select('*').eq('id', data.user.id).single();
+    if (!prof || !prof.active) { err.textContent = 'Hesap pasif. Yönetici ile görüşün.'; await client.auth.signOut(); return; }
+    if (prof.expiry && new Date(prof.expiry + 'T23:59:59') < new Date()) { err.textContent = 'Aboneliğiniz sona ermiş.'; await client.auth.signOut(); return; }
+    const token = 't' + Date.now() + Math.floor(Math.random() * 1e6);
+    await client.from('profiles').update({ current_session: token }).eq('id', data.user.id);
+    window.__cloudToken = token;
+    cloudWatchSession(client, data.user.id, token);
+    err.textContent = '';
+    document.getElementById('loginPass').value = '';
+    startSession({ user: username, role: prof.role || 'user', active: 1, expiry: prof.expiry || '', profile: prof.profile || DEFAULT_PROFILE });
+  } catch (e) { err.textContent = 'Bağlantı hatası. İnternetinizi kontrol edin.'; }
+}
+function cloudWatchSession(client, uid, token) {
+  try {
+    client.channel('sess-' + uid)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: 'id=eq.' + uid },
+        payload => {
+          if (payload.new && payload.new.current_session && payload.new.current_session !== token) {
+            showToast('⚠️ Başka bir cihazdan giriş yapıldı');
+            setTimeout(logout, 1500);
+          }
+        }).subscribe();
+  } catch (e) {}
 }
 
 /* ── LOGO (aktif kullanıcının profilinden) ── */
@@ -1607,6 +1777,7 @@ function persistCurrentUser() {
 }
 function openSettings() {
   updateLogoPreview();
+  renderThemeSwatches();
   document.getElementById('settingsOverlay').classList.add('open');
 }
 
@@ -1650,6 +1821,7 @@ function fillUserForm(u) {
   document.getElementById('ue_email').value = p.email || '';
   document.getElementById('ue_maps').value = p.maps || '';
   document.getElementById('ue_qr').value = p.qr || '';
+  document.getElementById('ue_theme').value = p.theme || '#1a3a8c';
   ueLogoData = p.logo || '';
   ueRenderLogoPreview();
 }
@@ -1701,6 +1873,7 @@ function adminSaveUser() {
       email: document.getElementById('ue_email').value.trim(),
       maps: document.getElementById('ue_maps').value.trim(),
       qr: document.getElementById('ue_qr').value.trim(),
+      theme: document.getElementById('ue_theme').value || '',
       logo: ueLogoData || ''
     }
   };
