@@ -1922,15 +1922,36 @@ function logout() {
 }
 function initAuth() {
   // Giriş sayfası ayarlarını uygula
-  applyLoginSettings(getLsSettings());
-  const list = seedUsers();
-  // Buluttan senkronize et, sonra oturum kontrol et
-  syncUsersFromCloud().then(() => {
+  try { applyLoginSettings(getLsSettings()); } catch(e) {}
+
+  // Admin kullanıcısı yoksa oluştur
+  seedUsers();
+
+  // Oturumu HEMEN kontrol et — bulut bekleme
+  function checkSession() {
     const s = getSession();
     const rec = s && findUser(s.user);
-    if (rec && Number(rec.active) && !isExpired(rec)) startSession(rec);
-    else { setSession(null); document.getElementById('loginOverlay').classList.add('show'); }
-  });
+    if (rec && Number(rec.active) && !isExpired(rec)) {
+      startSession(rec);
+    } else {
+      setSession(null);
+      const lo = document.getElementById('loginOverlay');
+      if (lo) { lo.style.display = 'flex'; lo.classList.add('show'); }
+    }
+  }
+
+  checkSession(); // Önce hemen göster
+
+  // Bulut ID varsa arka planda senkronize et
+  if (getCloudId()) {
+    syncUsersFromCloud().catch(function(){}).finally(function(){
+      // Senkronize olduktan sonra oturumu tekrar kontrol et (kullanıcı listesi güncellenmiş olabilir)
+      const s = getSession();
+      if (!s) return; // Zaten giriş bekliyorsa dokunma
+      const rec = findUser(s.user);
+      if (!rec || !Number(rec.active) || isExpired(rec)) { setSession(null); }
+    });
+  }
 }
 
 /* ── Masaüstü uygulama kurulumu ── */
