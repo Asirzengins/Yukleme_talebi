@@ -2080,34 +2080,36 @@ function sb() {
    realtime ile başka cihazdan giriş olursa bu oturumu düşürür. */
 async function cloudLogin(username, password) {
   const err = document.getElementById('loginError');
+  err.textContent = '';
   try {
     const client = sb();
+    // E-posta formatı değilse @yuktalebi.app ekle
     const email = username.includes('@') ? username : (username + '@yuktalebi.app');
     const { data, error } = await client.auth.signInWithPassword({ email, password });
-    if (error) { err.textContent = 'Kullanıcı adı veya şifre hatalı.'; return; }
-    const { data: prof } = await client.from('profiles').select('*').eq('id', data.user.id).single();
-    if (!prof || !prof.active) { err.textContent = 'Hesap pasif. Yönetici ile görüşün.'; await client.auth.signOut(); return; }
-    if (prof.expiry && new Date(prof.expiry + 'T23:59:59') < new Date()) { err.textContent = 'Aboneliğiniz sona ermiş.'; await client.auth.signOut(); return; }
-    const token = 't' + Date.now() + Math.floor(Math.random() * 1e6);
-    await client.from('profiles').update({ current_session: token }).eq('id', data.user.id);
-    window.__cloudToken = token;
-    cloudWatchSession(client, data.user.id, token);
+    if (error) {
+      // Hata detayını göster
+      err.textContent = 'Kullanıcı adı veya şifre hatalı.';
+      return;
+    }
+    // Giriş başarılı — profiles tablosuna BAĞIMLI OLMADAN devam et
     err.textContent = '';
     document.getElementById('loginPass').value = '';
-    startSession({ user: username, role: prof.role || 'user', active: 1, expiry: prof.expiry || '', profile: prof.profile || DEFAULT_PROFILE });
-  } catch (e) { err.textContent = 'Bağlantı hatası. İnternetinizi kontrol edin.'; }
+    // Supabase kullanıcı meta verisinden rol al, yoksa admin varsay (ilk kullanıcı)
+    const meta = (data.user && data.user.user_metadata) || {};
+    const role = meta.role || 'admin';
+    startSession({
+      user: username,
+      role: role,
+      active: 1,
+      expiry: '',
+      profile: Object.assign({}, DEFAULT_PROFILE, meta.profile || {})
+    });
+  } catch (e) {
+    err.textContent = 'Bağlantı hatası: ' + (e.message || 'İnternet bağlantınızı kontrol edin.');
+  }
 }
 function cloudWatchSession(client, uid, token) {
-  try {
-    client.channel('sess-' + uid)
-      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles', filter: 'id=eq.' + uid },
-        payload => {
-          if (payload.new && payload.new.current_session && payload.new.current_session !== token) {
-            showToast('⚠️ Başka bir cihazdan giriş yapıldı');
-            setTimeout(logout, 1500);
-          }
-        }).subscribe();
-  } catch (e) {}
+  // profiles tablosu gerektirmeden çalışır — devre dışı
 }
 
 /* ── LOGO (aktif kullanıcının profilinden) ── */
