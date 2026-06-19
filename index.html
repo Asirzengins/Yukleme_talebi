@@ -1408,20 +1408,19 @@
 ══════════════════════════ -->
 <div class="login-overlay" id="loginOverlay">
   <div class="login-card">
-    <div class="login-logo">📦</div>
-    <h2 class="login-title">Yükleme Talebi</h2>
-    <p class="login-sub">Devam etmek için giriş yapın</p>
+    <div id="loginLogo"></div>
+    <h2 class="login-title" id="loginTitle">Yükleme Talebi</h2>
+    <p class="login-sub" id="loginSubTitle">Devam etmek için giriş yapın</p>
     <div class="modal-field">
-      <label>Kullanıcı Adı</label>
+      <label id="loginUserLabel">Kullanıcı Adı</label>
       <input type="text" id="loginUser" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <div class="modal-field">
-      <label>Şifre</label>
+      <label id="loginPassLabel">Şifre</label>
       <input type="password" id="loginPass" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()">
     </div>
     <div class="login-error" id="loginError"></div>
     <button class="btn-save" style="width:100%;margin-top:6px;" onclick="doLogin()">Giriş Yap</button>
-    <p class="login-hint" id="loginHint"></p>
   </div>
 </div>
 
@@ -1433,27 +1432,187 @@
     <div class="modal-head">
       <div class="modal-title">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><path d="M9 22V12h6v10"/></svg>
-        Yönetici Paneli – Kullanıcılar
+        Yönetici Paneli
       </div>
       <button class="modal-close" onclick="closeModals()" title="Kapat">×</button>
     </div>
 
-    <div class="list-toolbar">
-      <div style="font-size:13px;color:#666;flex:1;">Her kullanıcıya kendi giriş bilgisi ve kendi <b>üst bilgi/QR</b> alanı verebilirsiniz.</div>
-      <button class="btn-new" onclick="adminNewUser()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-        Yeni Kullanıcı
-      </button>
+    <!-- Sekmeler -->
+    <div style="display:flex;gap:4px;padding:0 20px;border-bottom:2px solid #e8edf8;margin-bottom:16px;">
+      <button id="adminTab_users" onclick="switchAdminTab('users')" style="padding:9px 18px;border:none;background:var(--blue);color:#fff;border-radius:8px 8px 0 0;font-weight:600;cursor:pointer;font-size:13.5px;">👥 Kullanıcılar</button>
+      <button id="adminTab_login" onclick="switchAdminTab('login')" style="padding:9px 18px;border:none;background:#f0f4ff;color:#555;border-radius:8px 8px 0 0;font-weight:600;cursor:pointer;font-size:13.5px;">🎨 Giriş Sayfası</button>
+      <button id="adminTab_cloud" onclick="switchAdminTab('cloud')" style="padding:9px 18px;border:none;background:#f0f4ff;color:#555;border-radius:8px 8px 0 0;font-weight:600;cursor:pointer;font-size:13.5px;">☁️ Bulut Senkron</button>
     </div>
 
-    <div class="table-card">
-      <table>
-        <thead>
-          <tr><th class="td-no">#</th><th>Kullanıcı</th><th>Firma</th><th>Rol</th><th>Durum</th><th>Bitiş</th><th></th></tr>
-        </thead>
-        <tbody id="adminTableBody"></tbody>
-      </table>
+    <!-- SEKME: Kullanıcılar -->
+    <div id="adminPanel_users">
+      <div class="list-toolbar">
+        <div style="font-size:13px;color:#666;flex:1;">Her kullanıcıya kendi giriş bilgisi ve kendi <b>üst bilgi/QR</b> alanı verebilirsiniz.</div>
+        <button class="btn-new" onclick="adminNewUser()">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Yeni Kullanıcı
+        </button>
+      </div>
+      <div class="table-card">
+        <table>
+          <thead>
+            <tr><th class="td-no">#</th><th>Kullanıcı</th><th>Firma</th><th>Rol</th><th>Durum</th><th>Bitiş</th><th></th></tr>
+          </thead>
+          <tbody id="adminTableBody"></tbody>
+        </table>
+      </div>
     </div>
+
+    <!-- SEKME: Giriş Sayfası Ayarları -->
+    <div id="adminPanel_login" style="display:none;padding:0 4px 16px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:18px;">
+        <div>
+          <div class="ue-section" style="margin-bottom:12px;">📝 Metinler</div>
+          <div class="modal-field"><label>Sayfa Başlığı (tarayıcı sekmesi)</label><input type="text" id="ls_pageTitle" placeholder="Yükleme Talebi"></div>
+          <div class="modal-field"><label>Giriş Ekranı Ana Başlık</label><input type="text" id="ls_mainTitle" placeholder="Yükleme Talebi Sistemi"></div>
+          <div class="modal-field"><label>Ana Başlık Yazı Boyutu</label>
+            <select id="ls_titleSize" style="width:100%;padding:8px;border:1.5px solid #ccd4e6;border-radius:8px;">
+              <option value="20px">Küçük (20px)</option>
+              <option value="24px" selected>Normal (24px)</option>
+              <option value="28px">Büyük (28px)</option>
+              <option value="32px">Çok Büyük (32px)</option>
+            </select>
+          </div>
+          <div class="modal-field"><label>Alt Başlık / Açıklama</label><input type="text" id="ls_subTitle" placeholder="Lütfen giriş yapınız"></div>
+          <div class="modal-field"><label>Kullanıcı adı alanı etiketi</label><input type="text" id="ls_userLabel" placeholder="Kullanıcı Adı"></div>
+          <div class="modal-field"><label>Şifre alanı etiketi</label><input type="text" id="ls_passLabel" placeholder="Şifre"></div>
+          <div class="modal-field"><label>Giriş butonu metni</label><input type="text" id="ls_btnText" placeholder="Giriş Yap"></div>
+
+          <div class="ue-section" style="margin:16px 0 12px;">🖼️ Logo</div>
+          <div class="modal-field">
+            <label>Giriş ekranı logosu</label>
+            <div id="ls_logoPreview" style="min-height:60px;border:1.5px dashed #ccd4e6;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:8px;padding:8px;">
+              <span style="color:#999;font-size:13px;">Logo yüklenmedi</span>
+            </div>
+            <input type="file" id="ls_logoFile" accept="image/*" style="display:none" onchange="lsLogoFile(this)">
+            <div style="display:flex;gap:8px;">
+              <button class="btn-cancel" type="button" onclick="document.getElementById('ls_logoFile').click()">📁 Logo Seç</button>
+              <button class="btn-cancel" type="button" onclick="lsLogoClear()">↺ Kaldır</button>
+            </div>
+          </div>
+          <div class="modal-field"><label>Logo maksimum genişliği</label>
+            <select id="ls_logoSize" style="width:100%;padding:8px;border:1.5px solid #ccd4e6;border-radius:8px;">
+              <option value="80px">Küçük (80px)</option>
+              <option value="120px" selected>Orta (120px)</option>
+              <option value="160px">Büyük (160px)</option>
+              <option value="200px">Çok Büyük (200px)</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <div class="ue-section" style="margin-bottom:12px;">🎨 Renkler & Görünüm</div>
+          <div class="modal-field"><label>Arka plan tipi</label>
+            <select id="ls_bgType" style="width:100%;padding:8px;border:1.5px solid #ccd4e6;border-radius:8px;" onchange="lsToggleBgFields()">
+              <option value="gradient">Gradient (degrade)</option>
+              <option value="solid">Düz renk</option>
+              <option value="image">Arka plan görseli</option>
+            </select>
+          </div>
+          <div id="ls_gradientFields" class="modal-field" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div><label style="font-size:11px;">Renk 1</label><input type="color" id="ls_bg1" value="#1a3a8c" style="width:100%;height:36px;border:none;cursor:pointer;border-radius:6px;"></div>
+            <div><label style="font-size:11px;">Renk 2</label><input type="color" id="ls_bg2" value="#2a52b8" style="width:100%;height:36px;border:none;cursor:pointer;border-radius:6px;"></div>
+          </div>
+          <div id="ls_solidField" class="modal-field" style="display:none;"><label>Arka plan rengi</label><input type="color" id="ls_bgSolid" value="#1a3a8c" style="width:100%;height:36px;border:none;cursor:pointer;border-radius:6px;"></div>
+          <div id="ls_imageField" class="modal-field" style="display:none;">
+            <label>Arka plan görseli URL</label>
+            <input type="text" id="ls_bgImage" placeholder="https://...">
+            <div style="font-size:11px;color:#888;margin-top:4px;">Veya dosyadan yükle:</div>
+            <input type="file" id="ls_bgImageFile" accept="image/*" style="display:none" onchange="lsBgImageFile(this)">
+            <button class="btn-cancel" type="button" style="margin-top:6px;" onclick="document.getElementById('ls_bgImageFile').click()">📁 Görsel Seç</button>
+          </div>
+          <div class="modal-field"><label>Kart arka plan rengi</label><input type="color" id="ls_cardBg" value="#ffffff" style="width:100%;height:36px;border:none;cursor:pointer;border-radius:6px;"></div>
+          <div class="modal-field"><label>Kart köşe yuvarlama</label>
+            <select id="ls_cardRadius" style="width:100%;padding:8px;border:1.5px solid #ccd4e6;border-radius:8px;">
+              <option value="8px">Az yuvarlak (8px)</option>
+              <option value="16px" selected>Orta (16px)</option>
+              <option value="24px">Çok yuvarlak (24px)</option>
+            </select>
+          </div>
+          <div class="modal-field"><label>Buton rengi</label><input type="color" id="ls_btnColor" value="#1a3a8c" style="width:100%;height:36px;border:none;cursor:pointer;border-radius:6px;"></div>
+          <div class="modal-field"><label>Buton yazı rengi</label><input type="color" id="ls_btnTextColor" value="#ffffff" style="width:100%;height:36px;border:none;cursor:pointer;border-radius:6px;"></div>
+          <div class="modal-field"><label>Başlık rengi</label><input type="color" id="ls_titleColor" value="#1a3a8c" style="width:100%;height:36px;border:none;cursor:pointer;border-radius:6px;"></div>
+          <div class="modal-field"><label>Yazı tipi</label>
+            <select id="ls_font" style="width:100%;padding:8px;border:1.5px solid #ccd4e6;border-radius:8px;">
+              <option value="Inter, system-ui, sans-serif">Inter (varsayılan)</option>
+              <option value="'Segoe UI', Tahoma, sans-serif">Segoe UI</option>
+              <option value="Georgia, serif">Georgia (serif)</option>
+              <option value="Arial, sans-serif">Arial</option>
+              <option value="'Courier New', monospace">Courier (monospace)</option>
+            </select>
+          </div>
+          <div class="modal-field"><label>Giriş kutusu gölgesi</label>
+            <select id="ls_shadow" style="width:100%;padding:8px;border:1.5px solid #ccd4e6;border-radius:8px;">
+              <option value="none">Gölge yok</option>
+              <option value="0 4px 20px rgba(0,0,0,0.12)" selected>Hafif gölge</option>
+              <option value="0 8px 40px rgba(0,0,0,0.22)">Belirgin gölge</option>
+              <option value="0 2px 8px rgba(0,0,0,0.08)">Çok hafif</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Önizleme -->
+      <div style="margin-top:20px;">
+        <div class="ue-section" style="margin-bottom:10px;">👁 Canlı Önizleme</div>
+        <div id="ls_preview" style="border-radius:12px;overflow:hidden;border:1.5px solid #ccd4e6;min-height:280px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a3a8c,#2a52b8);transition:all .3s;">
+          <div id="ls_previewCard" style="background:#fff;border-radius:16px;padding:32px 28px;min-width:260px;max-width:320px;box-shadow:0 4px 20px rgba(0,0,0,0.12);text-align:center;">
+            <div id="ls_previewLogo" style="margin-bottom:12px;"></div>
+            <div id="ls_previewTitle" style="font-size:24px;font-weight:700;color:#1a3a8c;margin-bottom:6px;">Yükleme Talebi Sistemi</div>
+            <div id="ls_previewSub" style="font-size:13px;color:#888;margin-bottom:18px;">Lütfen giriş yapınız</div>
+            <div style="background:#f0f4ff;height:36px;border-radius:8px;margin-bottom:8px;"></div>
+            <div style="background:#f0f4ff;height:36px;border-radius:8px;margin-bottom:14px;"></div>
+            <div id="ls_previewBtn" style="background:#1a3a8c;color:#fff;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:15px;">Giriş Yap</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions" style="margin-top:16px;">
+        <button class="btn-cancel" onclick="lsReset()">↺ Varsayılana Sıfırla</button>
+        <button class="btn-save" onclick="lsSave()">💾 Kaydet & Uygula</button>
+      </div>
+    </div>
+
+    <!-- SEKME: Bulut Senkron -->
+    <div id="adminPanel_cloud" style="display:none;padding:16px 4px;">
+      <div style="background:#e8f0ff;border-radius:10px;padding:16px;margin-bottom:16px;font-size:13.5px;line-height:1.7;color:#333;">
+        <b>☁️ Bulut Senkronizasyonu Nedir?</b><br>
+        Kullanıcı listeniz tüm cihazlarda ortaklaşa tutulur. Telefonda eklediğiniz kullanıcı bilgisayarda da görünür.<br>
+        <b>Bulut ID'nizi not edin</b> — farklı cihazda aynı ID'yi girerek eşitleyin. Ya da <b>URL'i paylaşın</b>, ID otomatik aktarılır.
+      </div>
+      <div class="modal-field">
+        <label>Bulut ID (otomatik oluşturulur)</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="cloudIdInput" placeholder="Henüz oluşturulmadı" style="flex:1;">
+          <button class="btn-cancel" onclick="cloudCopyId()">📋 Kopyala</button>
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>Başka cihazdan ID gir (elle)</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="cloudIdManual" placeholder="ID'yi buraya yapıştır">
+          <button class="btn-save" onclick="cloudApplyId()">Bağlan</button>
+        </div>
+      </div>
+      <div class="modal-field">
+        <label>Paylaşılabilir URL (bu linki diğer cihazda aç)</label>
+        <div style="display:flex;gap:8px;">
+          <input type="text" id="cloudShareUrl" readonly style="flex:1;background:#f8f9fc;font-size:12px;">
+          <button class="btn-cancel" onclick="cloudCopyUrl()">📋 Kopyala</button>
+        </div>
+      </div>
+      <div style="display:flex;gap:10px;margin-top:10px;">
+        <button class="btn-save" onclick="cloudForcePush()" style="flex:1;">⬆️ Mevcut Listeyi Buluta Yükle</button>
+        <button class="btn-cancel" onclick="cloudForcePull()" style="flex:1;">⬇️ Buluttan İndir & Uygula</button>
+      </div>
+      <div id="cloudStatus" style="margin-top:12px;font-size:13px;color:#666;min-height:20px;"></div>
+    </div>
+
   </div>
 </div>
 
@@ -1573,6 +1732,67 @@ const DEFAULT_LOGO_SVG_PRINT = `
 ══════════════════════════════════════════════ */
 const USERS_KEY = 'mk_users';
 const SESSION_KEY = 'mk_session';
+const CLOUD_ID_KEY = 'mk_cloud_id';
+const LOGIN_SETTINGS_KEY = 'mk_login_settings';
+
+/* ══════════════════════════════════════════════
+   BULUT SENKRONIZASYONU — JSONBlob API
+   Kullanıcı listesi tüm cihazlarda ortak kalır.
+   Cloud ID localStorage'da + URL hash'te tutulur.
+══════════════════════════════════════════════ */
+const JSONBLOB_API = 'https://jsonblob.com/api/jsonBlob';
+
+function getCloudId() {
+  // Önce URL hash'ten bak (paylaşım için)
+  const hash = (location.hash || '').replace('#', '').trim();
+  if (hash && hash.startsWith('cid_')) {
+    localStorage.setItem(CLOUD_ID_KEY, hash.replace('cid_', ''));
+  }
+  return localStorage.getItem(CLOUD_ID_KEY) || '';
+}
+function setCloudId(id) {
+  localStorage.setItem(CLOUD_ID_KEY, id);
+  location.hash = 'cid_' + id;
+}
+
+async function cloudGetUsers() {
+  const id = getCloudId();
+  if (!id) return null;
+  try {
+    const r = await fetch(JSONBLOB_API + '/' + id, { headers: { 'Accept': 'application/json' } });
+    if (!r.ok) return null;
+    const data = await r.json();
+    return Array.isArray(data.users) ? data.users : null;
+  } catch (e) { return null; }
+}
+
+async function cloudSetUsers(list) {
+  const id = getCloudId();
+  const payload = { users: list, updatedAt: new Date().toISOString() };
+  if (!id) {
+    // İlk kez: yeni blob oluştur
+    try {
+      const r = await fetch(JSONBLOB_API, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      if (r.ok) {
+        const loc = r.headers.get('Location') || '';
+        const newId = loc.split('/').pop();
+        if (newId) { setCloudId(newId); showToast('☁️ Bulut bağlantısı kuruldu', true); }
+      }
+    } catch (e) { showToast('⚠️ Bulut bağlantısı kurulamadı'); }
+  } else {
+    try {
+      await fetch(JSONBLOB_API + '/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {}
+  }
+}
 
 /* Varsayılanlar BOŞ — her kullanıcı yalnızca yöneticinin kendisine tanımladığı
    bilgiyi görür (hazır marka/örnek gelmez). */
@@ -1597,7 +1817,10 @@ let activeProfile = Object.assign({}, DEFAULT_PROFILE);
 let currentUser = null;
 
 function getUsers() { try { return JSON.parse(localStorage.getItem(USERS_KEY) || '[]'); } catch (e) { return []; } }
-function setUsers(list) { localStorage.setItem(USERS_KEY, JSON.stringify(list)); }
+function setUsers(list) {
+  localStorage.setItem(USERS_KEY, JSON.stringify(list));
+  cloudSetUsers(list); // Buluta da kaydet
+}
 function seedUsers() {
   let list = getUsers();
   if (!list.length) {
@@ -1613,6 +1836,18 @@ function isExpired(u) {
 }
 function getSession() { try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch (e) { return null; } }
 function setSession(s) { if (s) localStorage.setItem(SESSION_KEY, JSON.stringify(s)); else localStorage.removeItem(SESSION_KEY); }
+
+/* Buluttan kullanıcıları çek ve localStorage'a yaz (sayfa açılışında) */
+async function syncUsersFromCloud() {
+  const id = getCloudId();
+  if (!id) return; // Bulut ID yoksa yerel mod
+  showToast('☁️ Senkronize ediliyor...');
+  const cloudUsers = await cloudGetUsers();
+  if (cloudUsers && cloudUsers.length) {
+    localStorage.setItem(USERS_KEY, JSON.stringify(cloudUsers));
+    showToast('✅ Kullanıcılar senkronize edildi', true);
+  }
+}
 
 function setText(id, t) { const e = document.getElementById(id); if (e) e.textContent = (t == null ? '' : t); }
 function setHref(id, h) { const e = document.getElementById(id); if (e) e.setAttribute('href', h); }
@@ -1686,13 +1921,16 @@ function logout() {
   document.getElementById('loginOverlay').classList.add('show');
 }
 function initAuth() {
+  // Giriş sayfası ayarlarını uygula
+  applyLoginSettings(getLsSettings());
   const list = seedUsers();
-  const onlyDefault = list.length === 1 && list[0].user === 'admin' && list[0].pass === 'admin';
-  setText('loginHint', onlyDefault ? '' : '');
-  const s = getSession();
-  const rec = s && findUser(s.user);
-  if (rec && Number(rec.active) && !isExpired(rec)) startSession(rec);
-  else { setSession(null); document.getElementById('loginOverlay').classList.add('show'); }
+  // Buluttan senkronize et, sonra oturum kontrol et
+  syncUsersFromCloud().then(() => {
+    const s = getSession();
+    const rec = s && findUser(s.user);
+    if (rec && Number(rec.active) && !isExpired(rec)) startSession(rec);
+    else { setSession(null); document.getElementById('loginOverlay').classList.add('show'); }
+  });
 }
 
 /* ── Masaüstü uygulama kurulumu ── */
@@ -1928,6 +2166,7 @@ let ueLogoData = '';
 function openAdmin() {
   if (!currentUser || currentUser.role !== 'admin') { showToast('⚠️ Bu bölüm sadece yöneticiye açıktır'); return; }
   adminRenderTable();
+  switchAdminTab('users');
   document.getElementById('adminOverlay').classList.add('open');
 }
 function adminRenderTable() {
@@ -2810,6 +3049,258 @@ function confirmDelete() {
 function closeEditDelModals() {
   document.getElementById('editOverlay').classList.remove('open');
   document.getElementById('delOverlay').classList.remove('open');
+}
+
+/* ══════════════════════════════════════════════
+   YÖNETİCİ PANELİ — SEKME YÖNETİMİ
+══════════════════════════════════════════════ */
+function switchAdminTab(tab) {
+  ['users','login','cloud'].forEach(t => {
+    const panel = document.getElementById('adminPanel_' + t);
+    const btn = document.getElementById('adminTab_' + t);
+    if (panel) panel.style.display = t === tab ? '' : 'none';
+    if (btn) {
+      btn.style.background = t === tab ? 'var(--blue)' : '#f0f4ff';
+      btn.style.color = t === tab ? '#fff' : '#555';
+    }
+  });
+  if (tab === 'cloud') cloudRefreshPanel();
+  if (tab === 'login') lsLoad();
+}
+
+/* ══════════════════════════════════════════════
+   GİRİŞ SAYFASI AYARLARI
+══════════════════════════════════════════════ */
+const LS_DEFAULTS = {
+  pageTitle: 'Yükleme Talebi',
+  mainTitle: 'Yükleme Talebi Sistemi',
+  titleSize: '24px',
+  subTitle: 'Lütfen giriş yapınız',
+  userLabel: 'Kullanıcı Adı',
+  passLabel: 'Şifre',
+  btnText: 'Giriş Yap',
+  bgType: 'gradient',
+  bg1: '#1a3a8c',
+  bg2: '#2a52b8',
+  bgSolid: '#1a3a8c',
+  bgImage: '',
+  cardBg: '#ffffff',
+  cardRadius: '16px',
+  btnColor: '#1a3a8c',
+  btnTextColor: '#ffffff',
+  titleColor: '#1a3a8c',
+  font: 'Inter, system-ui, sans-serif',
+  shadow: '0 4px 20px rgba(0,0,0,0.12)',
+  logoData: '',
+  logoSize: '120px'
+};
+let _lsLogoData = '';
+
+function getLsSettings() {
+  try { return Object.assign({}, LS_DEFAULTS, JSON.parse(localStorage.getItem(LOGIN_SETTINGS_KEY) || '{}')); }
+  catch (e) { return Object.assign({}, LS_DEFAULTS); }
+}
+function saveLsSettings(s) { localStorage.setItem(LOGIN_SETTINGS_KEY, JSON.stringify(s)); }
+
+function lsLoad() {
+  const s = getLsSettings();
+  _lsLogoData = s.logoData || '';
+  const fields = ['pageTitle','mainTitle','titleSize','subTitle','userLabel','passLabel','btnText','bgType','bg1','bg2','bgSolid','bgImage','cardBg','cardRadius','btnColor','btnTextColor','titleColor','font','shadow','logoSize'];
+  fields.forEach(f => { const el = document.getElementById('ls_' + f); if (el) el.value = s[f] || LS_DEFAULTS[f] || ''; });
+  lsUpdateLogoPreview();
+  lsToggleBgFields();
+  lsUpdatePreview();
+  // Canlı güncelleme için event dinleyicileri
+  fields.forEach(f => {
+    const el = document.getElementById('ls_' + f);
+    if (el) el.addEventListener('input', lsUpdatePreview);
+  });
+}
+
+function lsToggleBgFields() {
+  const t = document.getElementById('ls_bgType') && document.getElementById('ls_bgType').value;
+  const gf = document.getElementById('ls_gradientFields');
+  const sf = document.getElementById('ls_solidField');
+  const imf = document.getElementById('ls_imageField');
+  if (gf) gf.style.display = t === 'gradient' ? '' : 'none';
+  if (sf) sf.style.display = t === 'solid' ? '' : 'none';
+  if (imf) imf.style.display = t === 'image' ? '' : 'none';
+  lsUpdatePreview();
+}
+
+function lsUpdatePreview() {
+  const s = lsCurrentValues();
+  const preview = document.getElementById('ls_preview');
+  const card = document.getElementById('ls_previewCard');
+  const title = document.getElementById('ls_previewTitle');
+  const sub = document.getElementById('ls_previewSub');
+  const btn = document.getElementById('ls_previewBtn');
+  const logo = document.getElementById('ls_previewLogo');
+  if (!preview) return;
+
+  // Arka plan
+  if (s.bgType === 'gradient') preview.style.background = `linear-gradient(135deg,${s.bg1},${s.bg2})`;
+  else if (s.bgType === 'solid') preview.style.background = s.bgSolid;
+  else if (s.bgType === 'image' && (s.bgImage || s.bgImageData)) {
+    preview.style.background = `url(${s.bgImageData || s.bgImage}) center/cover`;
+  }
+
+  if (card) {
+    card.style.background = s.cardBg;
+    card.style.borderRadius = s.cardRadius;
+    card.style.boxShadow = s.shadow;
+    card.style.fontFamily = s.font;
+  }
+  if (title) { title.textContent = s.mainTitle || 'Yükleme Talebi Sistemi'; title.style.color = s.titleColor; title.style.fontSize = s.titleSize; }
+  if (sub) sub.textContent = s.subTitle || '';
+  if (btn) { btn.textContent = s.btnText || 'Giriş Yap'; btn.style.background = s.btnColor; btn.style.color = s.btnTextColor; }
+  if (logo) {
+    if (_lsLogoData) logo.innerHTML = `<img src="${_lsLogoData}" style="max-width:${s.logoSize};max-height:70px;object-fit:contain;">`;
+    else logo.innerHTML = '';
+  }
+}
+
+function lsCurrentValues() {
+  const fields = ['pageTitle','mainTitle','titleSize','subTitle','userLabel','passLabel','btnText','bgType','bg1','bg2','bgSolid','bgImage','cardBg','cardRadius','btnColor','btnTextColor','titleColor','font','shadow','logoSize'];
+  const s = Object.assign({}, LS_DEFAULTS);
+  fields.forEach(f => { const el = document.getElementById('ls_' + f); if (el) s[f] = el.value; });
+  s.logoData = _lsLogoData;
+  return s;
+}
+
+function lsSave() {
+  const s = lsCurrentValues();
+  saveLsSettings(s);
+  applyLoginSettings(s);
+  showToast('✅ Giriş sayfası ayarları kaydedildi', true);
+}
+
+function lsReset() {
+  if (!confirm('Tüm giriş sayfası ayarları sıfırlansın mı?')) return;
+  localStorage.removeItem(LOGIN_SETTINGS_KEY);
+  _lsLogoData = '';
+  lsLoad();
+  applyLoginSettings(LS_DEFAULTS);
+  showToast('↺ Varsayılan ayarlara dönüldü');
+}
+
+function lsLogoFile(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { _lsLogoData = e.target.result; lsUpdateLogoPreview(); lsUpdatePreview(); };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+function lsLogoClear() { _lsLogoData = ''; lsUpdateLogoPreview(); lsUpdatePreview(); }
+function lsUpdateLogoPreview() {
+  const box = document.getElementById('ls_logoPreview');
+  if (!box) return;
+  box.innerHTML = _lsLogoData ? `<img src="${_lsLogoData}" style="max-height:60px;max-width:100%;object-fit:contain;">` : '<span style="color:#999;font-size:13px;">Logo yüklenmedi</span>';
+}
+function lsBgImageFile(input) {
+  const file = input.files && input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const el = document.getElementById('ls_bgImage');
+    if (el) el.value = '';
+    window._lsBgImageData = e.target.result;
+    lsUpdatePreview();
+  };
+  reader.readAsDataURL(file);
+  input.value = '';
+}
+
+function applyLoginSettings(s) {
+  // Sayfa başlığı
+  if (s.pageTitle) document.title = s.pageTitle;
+  // Login overlay arka planı
+  const lo = document.getElementById('loginOverlay');
+  if (lo) {
+    if (s.bgType === 'gradient') lo.style.background = `linear-gradient(135deg,${s.bg1},${s.bg2})`;
+    else if (s.bgType === 'solid') lo.style.background = s.bgSolid;
+    else if (s.bgType === 'image') lo.style.background = (s.bgImage || window._lsBgImageData) ? `url(${window._lsBgImageData||s.bgImage}) center/cover` : lo.style.background;
+  }
+  // Login modal kartı
+  const lm = document.querySelector('#loginOverlay .modal');
+  if (lm) {
+    lm.style.borderRadius = s.cardRadius;
+    lm.style.background = s.cardBg;
+    lm.style.boxShadow = s.shadow;
+    lm.style.fontFamily = s.font;
+  }
+  // Başlık
+  const lt = document.getElementById('loginTitle');
+  if (lt) { lt.textContent = s.mainTitle || ''; lt.style.color = s.titleColor; lt.style.fontSize = s.titleSize; }
+  // Alt başlık
+  const ls = document.getElementById('loginSubTitle');
+  if (ls) ls.textContent = s.subTitle || '';
+  // Etiketler
+  const ul = document.getElementById('loginUserLabel'); if (ul) ul.textContent = s.userLabel || 'Kullanıcı Adı';
+  const pl = document.getElementById('loginPassLabel'); if (pl) pl.textContent = s.passLabel || 'Şifre';
+  // Buton
+  const lb = document.querySelector('#loginOverlay .btn-save');
+  if (lb) { lb.textContent = s.btnText || 'Giriş Yap'; lb.style.background = s.btnColor; lb.style.color = s.btnTextColor; }
+  // Logo
+  const ll = document.getElementById('loginLogo');
+  if (ll) {
+    if (s.logoData) ll.innerHTML = `<img src="${s.logoData}" style="max-width:${s.logoSize};max-height:80px;object-fit:contain;margin-bottom:10px;">`;
+    else ll.innerHTML = '';
+  }
+}
+
+/* ══════════════════════════════════════════════
+   BULUT PANEL FONKSİYONLARI
+══════════════════════════════════════════════ */
+function cloudRefreshPanel() {
+  const id = getCloudId();
+  const inp = document.getElementById('cloudIdInput');
+  const urlInp = document.getElementById('cloudShareUrl');
+  if (inp) inp.value = id || '';
+  if (urlInp) urlInp.value = id ? (location.origin + location.pathname + '#cid_' + id) : '';
+}
+function cloudCopyId() {
+  const id = getCloudId();
+  if (!id) { showToast('⚠️ Henüz bulut ID oluşturulmadı. Önce kullanıcı kaydedin.'); return; }
+  navigator.clipboard.writeText(id).then(() => showToast('📋 Bulut ID kopyalandı', true)).catch(() => showToast('ID: ' + id));
+}
+function cloudCopyUrl() {
+  const id = getCloudId();
+  if (!id) { showToast('⚠️ Henüz bulut ID oluşturulmadı.'); return; }
+  const url = location.origin + location.pathname + '#cid_' + id;
+  navigator.clipboard.writeText(url).then(() => showToast('📋 Paylaşım linki kopyalandı', true)).catch(() => {});
+}
+function cloudApplyId() {
+  const inp = document.getElementById('cloudIdManual');
+  const val = inp && inp.value.trim().replace('cid_', '');
+  if (!val) { showToast('⚠️ Lütfen bir ID girin'); return; }
+  localStorage.setItem(CLOUD_ID_KEY, val);
+  location.hash = 'cid_' + val;
+  const st = document.getElementById('cloudStatus');
+  if (st) st.textContent = '⏳ Buluttan kullanıcılar indiriliyor...';
+  cloudForcePull();
+}
+async function cloudForcePush() {
+  const st = document.getElementById('cloudStatus');
+  if (st) st.textContent = '⬆️ Yükleniyor...';
+  await cloudSetUsers(getUsers());
+  if (st) st.textContent = '✅ Kullanıcı listesi buluta yüklendi.';
+  cloudRefreshPanel();
+}
+async function cloudForcePull() {
+  const st = document.getElementById('cloudStatus');
+  if (st) st.textContent = '⬇️ İndiriliyor...';
+  const users = await cloudGetUsers();
+  if (users && users.length) {
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+    adminRenderTable();
+    if (st) st.textContent = '✅ ' + users.length + ' kullanıcı buluttan indirildi.';
+    showToast('✅ Kullanıcılar güncellendi', true);
+  } else {
+    if (st) st.textContent = '⚠️ Buluttan veri alınamadı. ID doğru mu?';
+  }
+  cloudRefreshPanel();
 }
 
 /* Tüm açılır pencereleri kapat */
