@@ -31,13 +31,7 @@
     });
   }
 </script>
-<!--
-  ╔══════════════════════════════════════════════════════════════╗
-  ║  ONLINE (Supabase) MODU İÇİN: aşağıdaki satırın başındaki      ║
-  ║  yorum işaretlerini kaldırın ve CLOUD-KURULUM.md'yi izleyin.   ║
-  ╚══════════════════════════════════════════════════════════════╝
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
--->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
   /* Hata yakalayıcı: bir şey çalışmazsa sessiz kalmasın, ekranda görünsün */
   window.addEventListener('error', function (e) {
@@ -2073,7 +2067,7 @@ function renderThemeSwatches() {
    Anahtarları doldurup head'deki SDK satırını açınca online'a geçer.
    Boşken uygulama yerel (cihaz) modunda çalışır. Detay: CLOUD-KURULUM.md
 ══════════════════════════════════════════════ */
-const CLOUD = { url: '', anonKey: '' };
+const CLOUD = { url: 'https://wcvrhtulchjirijncvus.supabase.co', anonKey: 'sb_publishable_0qw62ET3CzqY220qhQk6HA_5PB4IN5G' };
 let _sb = null;
 function cloudEnabled() {
   return !!(CLOUD.url && CLOUD.anonKey && typeof window.supabase !== 'undefined');
