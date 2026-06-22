@@ -2067,7 +2067,7 @@ function renderThemeSwatches() {
    Anahtarları doldurup head'deki SDK satırını açınca online'a geçer.
    Boşken uygulama yerel (cihaz) modunda çalışır. Detay: CLOUD-KURULUM.md
 ══════════════════════════════════════════════ */
-const CLOUD = { url: 'https://wcvrhtulchjirijncvus.supabase.co', anonKey: 'sb_publishable_0qw62ET3CzqY220qhQk6HA_5PB4IN5G' };
+const CLOUD = { url: 'https://wcvrhtulchjirijncvus.supabase.co', anonKey: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndjdnJodHVsY2hqaXJpam5jdnVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODE2OTE5MTksImV4cCI6MjA5NzI2NzkxOX0.mMXYlMfKxMUG7myjCubeD4Gqthf0qElNCfN2248PVJk' };
 let _sb = null;
 function cloudEnabled() {
   return !!(CLOUD.url && CLOUD.anonKey && typeof window.supabase !== 'undefined');
